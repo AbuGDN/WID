@@ -150,7 +150,8 @@ Misturar perspectivas para não ficar enviesado. Lista real em `backend/config/s
 | 2 ✅ | App Android: tela Hoje + detalhe + texto completo + tradução | Lê e traduz o feed no celular |
 | 3 ✅ | Widget Glance + notificações | Principal do dia na home; alerta de urgente |
 | 4 ✅ | Build automático + Releases (Obtainium) | Amigos instalam e atualizam sozinhos |
-| 5 | Extras: filtros por tag, arquivo, ajuste fino de fontes | — |
+| 5 ✅ | Arquivo, mapa, salvos/compartilhar, linha do tempo, ajustes de notificação, resumo diário, tema claro, widget compacto, limpeza de resumos, Times of Israel via Google News | — |
+| 6 | (fora do escopo por ora) tradução com LLM free tier no servidor | — |
 
 ---
 
