@@ -1,0 +1,206 @@
+package com.abugdn.wid.ui
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.abugdn.wid.data.Cluster
+import com.abugdn.wid.data.TAG_LABELS
+import com.abugdn.wid.repository
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(onOpen: (String) -> Unit) {
+    val repo = LocalContext.current.repository
+    val feed by repo.feed.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    var refreshing by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var tag by rememberSaveable { mutableStateOf<String?>(null) }
+
+    fun refresh() = scope.launch {
+        refreshing = true
+        error = repo.refresh().exceptionOrNull()?.let { "Sem conexão — mostrando o que está salvo" }
+        refreshing = false
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = {
+                Column {
+                    Text("WID · Guerras", fontWeight = FontWeight.Bold)
+                    feed?.let {
+                        Text(
+                            "Atualizado ${relativeTime(it.generatedAt)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            })
+        },
+    ) { padding ->
+        PullToRefreshBox(
+            isRefreshing = refreshing,
+            onRefresh = { refresh() },
+            modifier = Modifier.padding(padding).fillMaxSize(),
+        ) {
+            val data = feed
+            val clusters = data?.clusters.orEmpty().filter { tag == null || tag in it.tags }
+            val tagsPresent = TAG_LABELS.keys.filter { key -> data?.clusters.orEmpty().any { key in it.tags } }
+            val top = data?.topOfDay?.takeIf { tag == null }
+
+            LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                error?.let { item { Text(it, color = Red, modifier = Modifier.padding(16.dp, 8.dp)) } }
+                if (data == null) {
+                    item {
+                        Text(
+                            if (refreshing) "Carregando…" else "Puxe para baixo para carregar as notícias.",
+                            modifier = Modifier.padding(24.dp),
+                        )
+                    }
+                }
+                if (tagsPresent.isNotEmpty()) {
+                    item {
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            item {
+                                FilterChip(selected = tag == null, onClick = { tag = null }, label = { Text("Tudo") })
+                            }
+                            items(tagsPresent) { key ->
+                                FilterChip(
+                                    selected = tag == key,
+                                    onClick = { tag = if (tag == key) null else key },
+                                    label = { Text(TAG_LABELS.getValue(key)) },
+                                )
+                            }
+                        }
+                    }
+                }
+                top?.let { item { TopCard(it, onOpen) } }
+                items(clusters.filter { it.id != top?.id }, key = { it.id }) { c ->
+                    ClusterRow(c, onOpen)
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopCard(c: Cluster, onOpen: (String) -> Unit) {
+    val translator = LocalContext.current.repository.translator
+    Card(
+        modifier = Modifier.padding(16.dp).fillMaxWidth().clickable { onOpen(c.id) },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        c.image?.let {
+            AsyncImage(
+                model = it,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+            )
+        }
+        Column(Modifier.padding(16.dp)) {
+            Text("PRINCIPAL DO DIA", color = Red, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Text(translator.display(c.title, c.lang), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            if (c.summary.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    translator.display(c.summary, c.lang),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Meta(c)
+        }
+    }
+}
+
+@Composable
+private fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
+    val translator = LocalContext.current.repository.translator
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable { onOpen(c.id) }.padding(16.dp, 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            if (c.urgent) {
+                Text("URGENTE", color = Red, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            }
+            Text(
+                translator.display(c.title, c.lang),
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(4.dp))
+            Meta(c)
+        }
+        c.image?.let {
+            AsyncImage(
+                model = it,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.width(88.dp).aspectRatio(1f).clip(RoundedCornerShape(8.dp)),
+            )
+        }
+    }
+}
+
+@Composable
+fun Meta(c: Cluster) {
+    val count = if (c.sourcesCount > 1) " · ${c.sourcesCount} veículos" else ""
+    val tags = c.tags.mapNotNull { TAG_LABELS[it] }.take(2).joinToString(" · ")
+    Text(
+        listOf("${c.source}$count", relativeTime(c.updated), tags).filter { it.isNotBlank() }.joinToString(" · "),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}

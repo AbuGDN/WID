@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WID</string>
+    <string name="widget_name">Principal do dia</string>
+    <string name="widget_description">A principal notícia de guerra do dia</string>
+    <string name="channel_urgent">Urgente</string>
+    <string name="channel_top">Principal do dia</string>
+</resources>
