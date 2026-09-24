@@ -17,7 +17,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.Color
+import com.abugdn.wid.data.normalize
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,6 +77,10 @@ fun HomeScreen(tag: String?, onTag: (String?) -> Unit, onOpen: (String) -> Unit,
     val scope = rememberCoroutineScope()
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    val saved by repo.saved.collectAsStateWithLifecycle()
+    val readIds by repo.read.collectAsStateWithLifecycle()
 
     fun refresh() = scope.launch {
         refreshing = true
@@ -80,20 +91,45 @@ fun HomeScreen(tag: String?, onTag: (String?) -> Unit, onOpen: (String) -> Unit,
     Scaffold(
         contentWindowInsets = NoInsets,
         topBar = {
-            TopAppBar(actions = {
-                IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, contentDescription = "Ajustes") }
-            }, title = {
-                Column {
-                    Text("WID · Guerras", fontWeight = FontWeight.Bold)
-                    feed?.let {
-                        Text(
-                            "Atualizado ${relativeTime(it.generatedAt)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            if (searchOpen) {
+                TopAppBar(
+                    navigationIcon = {
+                        IconButton(onClick = { searchOpen = false; query = "" }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Fechar busca")
+                        }
+                    },
+                    title = {
+                        TextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            placeholder = { Text("Buscar nas últimas 48 h e nos salvos") },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
                         )
+                    },
+                )
+            } else {
+                TopAppBar(actions = {
+                    IconButton(onClick = { searchOpen = true }) { Icon(Icons.Filled.Search, contentDescription = "Buscar") }
+                    IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, contentDescription = "Ajustes") }
+                }, title = {
+                    Column {
+                        Text("WID · Guerras", fontWeight = FontWeight.Bold)
+                        feed?.let { f ->
+                            val fresh = f.clusters.count { it.id !in readIds && isNewSinceLastVisit(it, repo.previousVisit) }
+                            Text(
+                                "Atualizado ${relativeTime(f.generatedAt)}" + if (fresh > 0) " · $fresh novas" else "",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
-                }
-            })
+                })
+            }
         },
     ) { padding ->
         PullToRefreshBox(
@@ -102,9 +138,14 @@ fun HomeScreen(tag: String?, onTag: (String?) -> Unit, onOpen: (String) -> Unit,
             modifier = Modifier.padding(padding).fillMaxSize(),
         ) {
             val data = feed
-            val clusters = data?.clusters.orEmpty().filter { tag == null || tag in it.tags }
-            val tagsPresent = TAG_LABELS.keys.filter { key -> data?.clusters.orEmpty().any { key in it.tags } }
-            val top = data?.topOfDay?.takeIf { tag == null }
+            val searching = searchOpen && query.isNotBlank()
+            val clusters = if (searching) {
+                search((data?.clusters.orEmpty() + saved).distinctBy { it.id }, query, repo.translator::cached)
+            } else {
+                data?.clusters.orEmpty().filter { tag == null || tag in it.tags }
+            }
+            val tagsPresent = if (searching) emptyList() else TAG_LABELS.keys.filter { key -> data?.clusters.orEmpty().any { key in it.tags } }
+            val top = data?.topOfDay?.takeIf { tag == null && !searching }
 
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                 error?.let { item { Text(it, color = Red, modifier = Modifier.padding(16.dp, 8.dp)) } }
@@ -136,7 +177,17 @@ fun HomeScreen(tag: String?, onTag: (String?) -> Unit, onOpen: (String) -> Unit,
                         }
                     }
                 }
-                if (showWidgetHint) {
+                if (searching) {
+                    item {
+                        Text(
+                            if (clusters.isEmpty()) "Nada encontrado para “$query”." else "${clusters.size} resultado(s)",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp, 8.dp),
+                        )
+                    }
+                }
+                if (showWidgetHint && !searching) {
                     item {
                         WidgetHint(onAdd = {
                             scope.launch {
@@ -220,18 +271,25 @@ private fun TopCard(c: Cluster, onOpen: (String) -> Unit) {
 
 @Composable
 fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
-    val translator = LocalContext.current.repository.translator
+    val repo = LocalContext.current.repository
+    val translator = repo.translator
+    val readIds by repo.read.collectAsStateWithLifecycle()
+    val isRead = c.id in readIds
+    val isNew = !isRead && isNewSinceLastVisit(c, repo.previousVisit)
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onOpen(c.id) }.padding(16.dp, 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            if (c.urgent) {
-                Text("URGENTE", color = Red, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            val badges = listOfNotNull("URGENTE".takeIf { c.urgent }, "NOVA".takeIf { isNew })
+            if (badges.isNotEmpty()) {
+                Text(badges.joinToString(" · "), color = Red, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
             Text(
                 translator.display(c.title, c.lang),
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = if (isRead) FontWeight.Normal else FontWeight.Medium,
+                color = if (isRead) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -258,4 +316,27 @@ fun Meta(c: Cluster) {
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+/** História que começou depois da última vez que o app foi aberto. */
+fun isNewSinceLastVisit(c: Cluster, previousVisit: Long): Boolean {
+    if (previousVisit <= 0) return false
+    val start = runCatching { java.time.Instant.parse(c.published).toEpochMilli() }.getOrDefault(0)
+    return start > previousVisit
+}
+
+/** Busca sem acento no título, resumo, tradução e títulos de todos os veículos do grupo. */
+fun search(clusters: List<Cluster>, query: String, translated: (String) -> String): List<Cluster> {
+    val terms = normalize(query).split(Regex("\\s+")).filter { it.isNotBlank() }
+    if (terms.isEmpty()) return emptyList()
+    return clusters.filter { c ->
+        val text = normalize(
+            buildString {
+                append(c.title).append(' ').append(translated(c.title)).append(' ')
+                append(c.summary).append(' ').append(translated(c.summary)).append(' ')
+                c.articles.forEach { append(it.title).append(' ').append(translated(it.title)).append(' ') }
+            }
+        )
+        terms.all { it in text }
+    }.sortedByDescending { it.updated }
 }

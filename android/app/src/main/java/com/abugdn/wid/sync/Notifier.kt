@@ -16,6 +16,7 @@ import com.abugdn.wid.R
 import com.abugdn.wid.data.AppUpdate
 import com.abugdn.wid.data.Cluster
 import com.abugdn.wid.data.Feed
+import com.abugdn.wid.data.matchWatchWord
 import com.abugdn.wid.repository
 import com.abugdn.wid.ui.EXTRA_CLUSTER_ID
 import com.abugdn.wid.ui.MainActivity
@@ -27,6 +28,7 @@ object Notifier {
     private const val CHANNEL_DIGEST = "digest"
     private const val DIGEST_ID = 8_000
     private const val CHANNEL_UPDATE = "update"
+    private const val CHANNEL_WATCH = "watch"
     private const val UPDATE_ID = 8_001
     private const val TOP_MIN_INTERVAL_MS = 4 * 60 * 60 * 1000L
 
@@ -40,6 +42,9 @@ object Notifier {
         )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_DIGEST, context.getString(R.string.channel_digest), NotificationManager.IMPORTANCE_DEFAULT)
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_WATCH, context.getString(R.string.channel_watch), NotificationManager.IMPORTANCE_HIGH)
         )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_UPDATE, context.getString(R.string.channel_update), NotificationManager.IMPORTANCE_LOW)
@@ -66,7 +71,20 @@ object Notifier {
                 .forEach { notify(context, CHANNEL_URGENT, "Urgente", it) }
         }
         notified += urgent.map { it.id }
-        notified.retainAll(feed.clusters.map { it.id }.toSet())
+
+        // Palavras vigiadas: avisa uma vez por história, independente da região.
+        val translate = { t: String -> repo.translator.cached(t) }
+        val watched = feed.clusters
+            .filter { "w:${it.id}" !in notified }
+            .mapNotNull { c -> c.matchWatchWord(settings.watchWords, translate)?.let { c to it } }
+        if (!silent) {
+            watched.filter { (c, _) -> c.id !in urgent.map { it.id } }.take(3)
+                .forEach { (c, word) -> notify(context, CHANNEL_WATCH, "“$word”", c) }
+        }
+        notified += watched.map { "w:${it.first.id}" }
+
+        val ids = feed.clusters.map { it.id }.toSet()
+        notified.retainAll { it.removePrefix("w:") in ids }
 
         val top = feed.topOfDay
         val editor = prefs.edit().putStringSet("notified", notified).putBoolean("initialized", true)

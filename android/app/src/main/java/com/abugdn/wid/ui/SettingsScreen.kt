@@ -15,7 +15,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -121,6 +128,44 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }
 
+            Section("Palavras vigiadas")
+            Text(
+                "Notifica sempre que uma notícia citar um destes termos (em qualquer região, respeitando o não perturbe).",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            var newWord by remember { mutableStateOf("") }
+            fun addWord() {
+                val w = newWord.trim()
+                if (w.isNotEmpty()) update { st -> st.copy(watchWords = st.watchWords + w) }
+                newWord = ""
+            }
+            Row(Modifier.padding(16.dp, 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = newWord,
+                    onValueChange = { newWord = it },
+                    placeholder = { Text("ex.: Hezbollah, Rafah, Houthi") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { addWord() }),
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { addWord() }) { Text("Adicionar") }
+            }
+            if (s.watchWords.isNotEmpty()) {
+                FlowRow(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    s.watchWords.sorted().forEach { word ->
+                        InputChip(
+                            selected = true,
+                            onClick = { update { st -> st.copy(watchWords = st.watchWords - word) } },
+                            label = { Text(word) },
+                            trailingIcon = { Icon(Icons.Filled.Close, contentDescription = "Remover $word") },
+                        )
+                    }
+                }
+            }
+
             Section("Aparência")
             Chips(ThemeMode.entries, selected = { it == s.theme }, label = {
                 when (it) {
@@ -129,6 +174,15 @@ fun SettingsScreen(onBack: () -> Unit) {
                     ThemeMode.DARK -> "Escuro"
                 }
             }) { update { st -> st.copy(theme = it) } }
+            Text("Tamanho do texto", modifier = Modifier.padding(16.dp, 8.dp))
+            Chips(listOf(0.9f, 1f, 1.15f, 1.3f), selected = { it == s.textScale }, label = {
+                when (it) {
+                    0.9f -> "Pequeno"
+                    1f -> "Normal"
+                    1.15f -> "Grande"
+                    else -> "Enorme"
+                }
+            }) { update { st -> st.copy(textScale = it) } }
 
             Section("Versão do app")
             val updater = context.repository.updater

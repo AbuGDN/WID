@@ -39,6 +39,30 @@ class Repository(context: Context) {
     private val _saved = MutableStateFlow(storage.loadSaved())
     val saved: StateFlow<List<Cluster>> = _saved.asStateFlow()
 
+    private val _read = MutableStateFlow(storage.prefs.getStringSet("read_ids", emptySet())!!.toSet())
+    val read: StateFlow<Set<String>> = _read.asStateFlow()
+
+    /** Horário da visita anterior: histórias que começaram depois disso são "novas". */
+    var previousVisit: Long = storage.prefs.getLong("last_visit", 0)
+        private set
+
+    fun markRead(id: String) {
+        if (id in _read.value) return
+        val keep = (_feed.value?.clusters.orEmpty() + _saved.value).map { it.id }.toSet()
+        val next = (_read.value + id).filter { it in keep || it == id }.toSet()
+        storage.prefs.edit().putStringSet("read_ids", next).apply()
+        _read.value = next
+    }
+
+    /** Chamado quando o app vai para o fundo: a próxima abertura conta novidades a partir daqui. */
+    fun endVisit() {
+        storage.prefs.edit().putLong("last_visit", System.currentTimeMillis()).apply()
+    }
+
+    fun startVisit() {
+        previousVisit = storage.prefs.getLong("last_visit", 0)
+    }
+
     private val _archive = MutableStateFlow<List<HistoryDay>?>(null)
     val archive: StateFlow<List<HistoryDay>?> = _archive.asStateFlow()
 

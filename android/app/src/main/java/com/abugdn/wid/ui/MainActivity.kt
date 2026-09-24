@@ -62,10 +62,20 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settings by repository.settings.state.collectAsStateWithLifecycle()
-            WidTheme(settings.theme) {
+            WidTheme(settings.theme, settings.textScale) {
                 App(openCluster = openCluster, onOpenCluster = { openCluster = it })
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        repository.startVisit()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        repository.endVisit()
     }
 
     override fun onNewIntent(intent: Intent) {

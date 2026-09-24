@@ -19,6 +19,10 @@ data class Settings(
     val quietStart: Int = 22,
     val quietEnd: Int = 7,
     val theme: ThemeMode = ThemeMode.SYSTEM,
+    /** Termos que sempre geram notificação quando aparecem numa notícia. */
+    val watchWords: Set<String> = emptySet(),
+    /** Multiplicador do tamanho do texto em todo o app. */
+    val textScale: Float = 1f,
 ) {
     fun matchesRegion(tags: List<String>) = regions.isEmpty() || tags.any { it in regions }
 
@@ -46,6 +50,8 @@ class SettingsStore(private val prefs: SharedPreferences) {
             .putInt("s_quiet_start", next.quietStart)
             .putInt("s_quiet_end", next.quietEnd)
             .putString("s_theme", next.theme.name)
+            .putStringSet("s_watch", next.watchWords)
+            .putFloat("s_text_scale", next.textScale)
             .apply()
         _state.value = next
     }
@@ -60,5 +66,29 @@ class SettingsStore(private val prefs: SharedPreferences) {
         quietStart = prefs.getInt("s_quiet_start", 22),
         quietEnd = prefs.getInt("s_quiet_end", 7),
         theme = runCatching { ThemeMode.valueOf(prefs.getString("s_theme", null)!!) }.getOrDefault(ThemeMode.SYSTEM),
+        watchWords = prefs.getStringSet("s_watch", emptySet())!!.toSet(),
+        textScale = prefs.getFloat("s_text_scale", 1f),
     )
+}
+
+/** Minúsculas e sem acento, para comparar "Irã" com "ira" e "Líbano" com "libano". */
+fun normalize(text: String): String =
+    java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{M}+"), "")
+        .lowercase()
+
+/** Primeiro termo vigiado que aparece na notícia (no original ou na tradução). */
+fun Cluster.matchWatchWord(words: Set<String>, translated: (String) -> String): String? {
+    if (words.isEmpty()) return null
+    val haystack = normalize(
+        buildString {
+            append(title).append('\n').append(summary).append('\n').append(translated(title))
+            articles.forEach { append('\n').append(it.title) }
+        }
+    )
+    // Casa no início de uma palavra: "hezbollah" acha "Hezbollah's", mas "ira" não acha "mira".
+    return words.firstOrNull { word ->
+        val w = normalize(word.trim())
+        w.isNotEmpty() && Regex("(?<![\\p{L}\\d])" + Regex.escape(w)).containsMatchIn(haystack)
+    }
 }
