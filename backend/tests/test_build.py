@@ -89,3 +89,16 @@ def test_urgent_flag(tmp_path):
         arts += parse_feed(xml.encode(), src, NOW)
     feed = build(tmp_path, NOW, [], k, arts, {})
     assert feed["clusters"][0]["urgent"] is True
+
+
+def test_unwraps_redirector_urls():
+    wrapped = "https://redir.folha.com.br/redir/online/mundo/rss091/*https://www1.folha.uol.com.br/mundo/x.shtml"
+    assert canonical_url(wrapped) == "https://www1.folha.uol.com.br/mundo/x.shtml"
+
+
+def test_same_story_pt_en_shares_tokens():
+    from wid.text import tokens
+
+    en = tokens("Son of Israeli Ambassador to U.S. Critically Hurt in West Bank Attack")
+    pt = tokens("Filho de embaixador de Israel nos EUA fica gravemente ferido em ataque na Cisjordânia")
+    assert {"son", "ambassador", "israel", "usa", "westbank", "attack", "hurt"} <= en & pt

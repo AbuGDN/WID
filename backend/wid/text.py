@@ -41,8 +41,21 @@ CANON = {
     "soldado": "soldier", "alvo": "target", "escola": "school",
     "acordo": "deal", "agreement": "deal", "negociacao": "talk", "negotiation": "talk",
     "fronteira": "border", "sul": "south", "norte": "north", "lider": "leader",
-    "chefe": "leader", "comandante": "commander",
+    "chefe": "leader", "comandante": "commander", "filho": "son", "filha": "daughter",
+    "embaixador": "ambassador", "ferido": "hurt", "wounded": "hurt", "injured": "hurt",
+    "presidente": "president", "primeiro": "prime", "ministro": "minister",
+    "civi": "civilian", "civil": "civilian", "paquistao": "pakistan", "afeganistao": "afghanistan",
+    "discurso": "speech", "onu": "un",
 }
+
+# Expressões de várias palavras viram um token só antes da tokenização.
+PHRASES = [
+    (re.compile(r"\bwest bank\b"), "westbank"),
+    (re.compile(r"\bestados unidos\b|\bu\.s\.(?=\W|$)|\bu\.s\b"), "usa"),
+    (re.compile(r"\bunited states\b"), "usa"),
+    (re.compile(r"\bnações unidas\b|\bunited nations\b"), "un"),
+    (re.compile(r"\bfaixa de gaza\b|\bgaza strip\b"), "gaza"),
+]
 
 
 def clean_html(raw: str | None) -> str:
@@ -71,8 +84,14 @@ def tokens(text: str) -> set[str]:
     Nomes próprios (Netanyahu, Gaza, Hezbollah) sobrevivem igual em PT e EN,
     o que permite agrupar a mesma história entre idiomas.
     """
+    text = text.lower()
+    for rx, repl in PHRASES:
+        text = rx.sub(repl, text)
     out = set()
-    for word in _WORD_RE.findall(strip_accents(text.lower())):
+    for word in _WORD_RE.findall(strip_accents(text)):
+        if word in ("un", "usa"):
+            out.add(word)
+            continue
         if len(word) < 3 or word in STOPWORDS or word.isdigit():
             continue
         if len(word) > 4 and word.endswith("s"):

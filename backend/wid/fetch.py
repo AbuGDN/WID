@@ -16,7 +16,11 @@ from .text import clean_html, truncate
 
 log = logging.getLogger(__name__)
 
-USER_AGENT = "Mozilla/5.0 (compatible; WID-news-bot/1.0; uso pessoal)"
+# Vários sites (Times of Israel, Al-Monitor) recusam user-agents de robô.
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/128.0 Safari/537.36"
+)
 TIMEOUT = 20.0
 _IMG_RE = re.compile(r"<img[^>]+src=[\"']([^\"']+)[\"']", re.I)
 _TRACKING_PARAMS = re.compile(r"^(utm_|at_|cmpid$|ocid$|fbclid$|gclid$)")
@@ -70,6 +74,10 @@ def parse_iso(value: str) -> datetime:
 
 
 def canonical_url(url: str) -> str:
+    # Redirecionadores que embrulham o link real, ex. redir.folha.com.br/.../*https://www1.folha...
+    wrapped = url.find("/*http")
+    if wrapped != -1:
+        url = url[wrapped + 2:]
     parts = urlsplit(url.strip())
     query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if not _TRACKING_PARAMS.match(k)]
     return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
@@ -132,16 +140,21 @@ def parse_feed(data: bytes, source: dict, now: datetime) -> list[Article]:
 
 
 def fetch_source(client: httpx.Client, source: dict, now: datetime) -> tuple[list[Article], str | None]:
-    try:
-        resp = client.get(source["url"])
-        resp.raise_for_status()
-        articles = parse_feed(resp.content, source, now)
-        if not articles:
-            return [], "feed vazio ou inválido"
-        return articles, None
-    except Exception as exc:  # uma fonte quebrada não pode derrubar as outras
-        log.warning("falha em %s: %s", source["name"], exc)
-        return [], f"{type(exc).__name__}: {exc}"[:200]
+    """Tenta cada URL da fonte (`url` pode ser uma lista de alternativas)."""
+    urls = source["url"] if isinstance(source["url"], list) else [source["url"]]
+    errors = []
+    for url in urls:
+        try:
+            resp = client.get(url)
+            resp.raise_for_status()
+            articles = parse_feed(resp.content, source, now)
+            if articles:
+                return articles, None
+            errors.append(f"{url}: feed vazio ou inválido")
+        except Exception as exc:  # uma fonte quebrada não pode derrubar as outras
+            errors.append(f"{url}: {type(exc).__name__} {getattr(getattr(exc, 'response', None), 'status_code', '')}".strip())
+    log.warning("falha em %s: %s", source["name"], errors)
+    return [], " | ".join(errors)[:400]
 
 
 def fetch_all(sources: list[dict], now: datetime) -> tuple[list[Article], dict]:
