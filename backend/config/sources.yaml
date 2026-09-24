@@ -6,8 +6,14 @@
 
 sources:
   # --- Israel ---
-  # Times of Israel costuma bloquear IPs do GitHub (403); fica para quando liberar.
-  - {name: Times of Israel, url: ["https://www.timesofisrael.com/feed/", "https://www.timesofisrael.com/israel-and-the-region/feed/"], lang: en, weight: 1.2}
+  # Times of Israel bloqueia IPs do GitHub (403); se falhar, usa as manchetes via Google News
+  # (links são redirecionamentos do Google, então o texto completo vem de outro veículo do grupo).
+  - name: Times of Israel
+    url:
+      - "https://www.timesofisrael.com/feed/"
+      - "https://news.google.com/rss/search?q=site:timesofisrael.com+when:2d&hl=en-US&gl=US&ceid=US:en"
+    lang: en
+    weight: 1.2
   - {name: Jerusalem Post, url: "https://www.jpost.com/rss/rssfeedsheadlines.aspx", lang: en, weight: 1.1}
   - {name: Ynetnews, url: "https://www.ynetnews.com/Integration/StoryRss3089.xml", lang: en, weight: 1.1}
   - {name: Israel Hayom, url: "https://www.israelhayom.com/feed/", lang: en, weight: 1.0}

@@ -66,6 +66,22 @@ def clean_html(raw: str | None) -> str:
     return _WS_RE.sub(" ", text).strip()
 
 
+# Lixo comum que os feeds colocam no resumo.
+_SUMMARY_JUNK = [
+    re.compile(r"✅\s*Siga o canal.*?WhatsApp\s*(➡️|➡)?", re.I),
+    re.compile(r"\s*Leia mais\s*\(\d{2}/\d{2}/\d{4}\s*-\s*\d{1,2}h\d{2}\)\s*$", re.I),
+    re.compile(r"\s*The post .{0,300}? appeared first on .{0,80}$", re.I),
+    re.compile(r"\s*Continue reading\.*\s*$", re.I),
+    re.compile(r"\s*\[(…|\.\.\.)\]\s*$"),
+]
+
+
+def clean_summary(text: str) -> str:
+    for rx in _SUMMARY_JUNK:
+        text = rx.sub(" ", text)
+    return _WS_RE.sub(" ", text).strip()
+
+
 def truncate(text: str, limit: int) -> str:
     if len(text) <= limit:
         return text

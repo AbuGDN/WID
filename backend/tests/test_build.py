@@ -102,3 +102,26 @@ def test_same_story_pt_en_shares_tokens():
     en = tokens("Son of Israeli Ambassador to U.S. Critically Hurt in West Bank Attack")
     pt = tokens("Filho de embaixador de Israel nos EUA fica gravemente ferido em ataque na Cisjordânia")
     assert {"son", "ambassador", "israel", "usa", "westbank", "attack", "hurt"} <= en & pt
+
+
+def test_clean_summary_removes_feed_junk():
+    from wid.text import clean_summary
+
+    g1 = "O filho ✅ Siga o canal de notícias internacionais do g1 no WhatsApp ➡️ Neria Leiter é reservista"
+    assert clean_summary(g1) == "O filho Neria Leiter é reservista"
+    folha = "Estado grave após ataque. Leia mais (09/24/2026 - 18h05)"
+    assert clean_summary(folha) == "Estado grave após ataque."
+    wp = "Troops entered the town. The post Troops enter town appeared first on Israel Hayom."
+    assert clean_summary(wp) == "Troops entered the town."
+
+
+def test_google_news_titles_lose_publisher_suffix():
+    from wid.fetch import _from_google_news
+
+    xml = b"""<rss><channel><item><title>IDF strikes Hezbollah in Lebanon - The Times of Israel</title>
+    <link>https://news.google.com/rss/articles/abc</link><description>&lt;a href="x"&gt;links&lt;/a&gt;</description>
+    <pubDate>Thu, 24 Sep 2026 09:00:00 GMT</pubDate></item></channel></rss>"""
+    arts = parse_feed(xml, {"name": "Times of Israel", "lang": "en"}, NOW)
+    _from_google_news(arts)
+    assert arts[0].title == "IDF strikes Hezbollah in Lebanon"
+    assert arts[0].summary == ""

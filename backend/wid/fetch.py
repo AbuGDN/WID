@@ -12,7 +12,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 import feedparser
 import httpx
 
-from .text import clean_html, truncate
+from .text import clean_html, clean_summary, truncate
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class Article:
         return cls(
             id=article_id(url),
             title=data["title"],
-            summary=data.get("summary", ""),
+            summary=clean_summary(data.get("summary", "")),
             url=url,
             source=data["source"],
             lang=data.get("lang", "en"),
@@ -121,7 +121,7 @@ def parse_feed(data: bytes, source: dict, now: datetime) -> list[Article]:
         title = clean_html(entry.get("title"))
         if not url or not title:
             continue
-        summary = clean_html(entry.get("summary") or entry.get("description"))
+        summary = clean_summary(clean_html(entry.get("summary") or entry.get("description")))
         if summary.startswith(title):
             summary = summary[len(title):].strip(" -–:")
         articles.append(
@@ -140,6 +140,15 @@ def parse_feed(data: bytes, source: dict, now: datetime) -> list[Article]:
     return articles
 
 
+def _from_google_news(articles: list[Article]) -> None:
+    """Google News põe " - Nome do Veículo" no fim do título e o resumo é só links."""
+    for art in articles:
+        head, sep, _ = art.title.rpartition(" - ")
+        if sep and head:
+            art.title = head
+        art.summary = ""
+
+
 def fetch_source(client: httpx.Client, source: dict, now: datetime) -> tuple[list[Article], str | None]:
     """Tenta cada URL da fonte (`url` pode ser uma lista de alternativas)."""
     urls = source["url"] if isinstance(source["url"], list) else [source["url"]]
@@ -149,6 +158,8 @@ def fetch_source(client: httpx.Client, source: dict, now: datetime) -> tuple[lis
             resp = client.get(url)
             resp.raise_for_status()
             articles = parse_feed(resp.content, source, now)
+            if "news.google.com" in url:
+                _from_google_news(articles)
             if articles:
                 return articles, None
             errors.append(f"{url}: feed vazio ou inválido")
