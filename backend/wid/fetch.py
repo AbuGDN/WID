@@ -52,11 +52,12 @@ class Article:
 
     @classmethod
     def from_json(cls, data: dict, weight: float = 1.0) -> "Article":
+        url = canonical_url(data["url"])
         return cls(
-            id=data["id"],
+            id=article_id(url),
             title=data["title"],
             summary=data.get("summary", ""),
-            url=data["url"],
+            url=url,
             source=data["source"],
             lang=data.get("lang", "en"),
             weight=weight,
