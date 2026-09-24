@@ -28,6 +28,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         TopWidget().updateAll(applicationContext)
         CompactWidget().updateAll(applicationContext)
         runCatching { repo.prefetch(feed) }
+        repo.updater.check().getOrNull()?.let { update ->
+            if (repo.updater.shouldNotify(update)) Notifier.update(applicationContext, update)
+        }
         return Result.success()
     }
 

@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.abugdn.wid.R
+import com.abugdn.wid.data.AppUpdate
 import com.abugdn.wid.data.Cluster
 import com.abugdn.wid.data.Feed
 import com.abugdn.wid.repository
@@ -25,6 +26,8 @@ object Notifier {
     private const val CHANNEL_TOP = "top"
     private const val CHANNEL_DIGEST = "digest"
     private const val DIGEST_ID = 8_000
+    private const val CHANNEL_UPDATE = "update"
+    private const val UPDATE_ID = 8_001
     private const val TOP_MIN_INTERVAL_MS = 4 * 60 * 60 * 1000L
 
     fun createChannels(context: Context) {
@@ -37,6 +40,9 @@ object Notifier {
         )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_DIGEST, context.getString(R.string.channel_digest), NotificationManager.IMPORTANCE_DEFAULT)
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_UPDATE, context.getString(R.string.channel_update), NotificationManager.IMPORTANCE_LOW)
         )
     }
 
@@ -101,6 +107,22 @@ object Notifier {
             .setAutoCancel(true)
             .build()
         NotificationManagerCompat.from(context).notify(DIGEST_ID, notification)
+    }
+
+    /** Versão nova do app no GitHub; tocar abre o app, que mostra o botão de atualizar. */
+    @SuppressLint("MissingPermission") // checado em canNotify
+    fun update(context: Context, update: AppUpdate) {
+        if (!canNotify(context)) return
+        val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val pending = PendingIntent.getActivity(context, UPDATE_ID, intent, PendingIntent.FLAG_IMMUTABLE)
+        val notification = NotificationCompat.Builder(context, CHANNEL_UPDATE)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("WID ${update.versionName} disponível")
+            .setContentText("Toque para abrir o app e atualizar.")
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(UPDATE_ID, notification)
     }
 
     private fun canNotify(context: Context) = Build.VERSION.SDK_INT < 33 ||

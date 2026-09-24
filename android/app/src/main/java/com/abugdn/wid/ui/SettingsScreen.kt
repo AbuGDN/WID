@@ -130,6 +130,25 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }) { update { st -> st.copy(theme = it) } }
 
+            Section("Versão do app")
+            val updater = context.repository.updater
+            var checkMsg by remember { mutableStateOf<String?>(null) }
+            Text("Instalada: ${updater.installedName}", modifier = Modifier.padding(horizontal = 16.dp))
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        checkMsg = "Procurando…"
+                        checkMsg = updater.check(force = true).fold(
+                            { if (it == null) "Você já está na versão mais recente." else null },
+                            { "Sem conexão com o GitHub." },
+                        )
+                    }
+                },
+                modifier = Modifier.padding(16.dp, 8.dp),
+            ) { Text("Procurar atualização") }
+            checkMsg?.let { Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 16.dp)) }
+            UpdateBanner(Modifier.padding(16.dp, 8.dp))
+
             Section("Widgets")
             Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { pin { requestPinGlanceAppWidget(TopWidgetReceiver::class.java) } }) { Text("Principal do dia") }

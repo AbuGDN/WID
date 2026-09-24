@@ -64,6 +64,7 @@ fun HomeScreen(tag: String?, onTag: (String?) -> Unit, onOpen: (String) -> Unit,
     val widgets = remember { GlanceAppWidgetManager(context) }
     var showWidgetHint by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        repo.updater.check()
         showWidgetHint = runCatching { widgets.getGlanceIds(TopWidget::class.java).isEmpty() }.getOrDefault(false)
     }
     val scope = rememberCoroutineScope()
@@ -107,6 +108,7 @@ fun HomeScreen(tag: String?, onTag: (String?) -> Unit, onOpen: (String) -> Unit,
 
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                 error?.let { item { Text(it, color = Red, modifier = Modifier.padding(16.dp, 8.dp)) } }
+                item { UpdateBanner(Modifier.padding(16.dp, 8.dp)) }
                 if (data == null) {
                     item {
                         Text(

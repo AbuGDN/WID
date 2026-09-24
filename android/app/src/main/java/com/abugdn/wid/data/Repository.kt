@@ -26,6 +26,7 @@ class Repository(context: Context) {
     val storage = Storage(context)
     val translator = Translator(storage)
     val settings = SettingsStore(storage.prefs)
+    val updater = Updater(context.applicationContext)
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
