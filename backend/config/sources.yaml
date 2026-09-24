@@ -6,15 +6,15 @@
 
 sources:
   # --- Israel ---
+  # Times of Israel costuma bloquear IPs do GitHub (403); fica para quando liberar.
   - {name: Times of Israel, url: ["https://www.timesofisrael.com/feed/", "https://www.timesofisrael.com/israel-and-the-region/feed/"], lang: en, weight: 1.2}
   - {name: Jerusalem Post, url: "https://www.jpost.com/rss/rssfeedsheadlines.aspx", lang: en, weight: 1.1}
   - {name: Ynetnews, url: "https://www.ynetnews.com/Integration/StoryRss3089.xml", lang: en, weight: 1.1}
-  - {name: i24NEWS, url: ["https://www.i24news.tv/en/rss", "https://www.i24news.tv/en/rss/news"], lang: en, weight: 1.0}
+  - {name: Israel Hayom, url: "https://www.israelhayom.com/feed/", lang: en, weight: 1.0}
 
   # --- Mundo árabe / regional ---
   - {name: Al Jazeera, url: "https://www.aljazeera.com/xml/rss/all.xml", lang: en, weight: 1.0}
   - {name: Middle East Eye, url: "https://www.middleeasteye.net/rss", lang: en, weight: 0.9}
-  - {name: Al-Monitor, url: ["https://www.al-monitor.com/rss", "https://www.al-monitor.com/rss.xml"], lang: en, weight: 1.0}
 
   # --- Internacionais ---
   - {name: BBC Middle East, url: "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml", lang: en, weight: 1.2}
