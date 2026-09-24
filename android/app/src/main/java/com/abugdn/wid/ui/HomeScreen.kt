@@ -22,11 +22,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,18 +42,27 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.abugdn.wid.data.Cluster
 import com.abugdn.wid.data.TAG_LABELS
 import com.abugdn.wid.repository
+import com.abugdn.wid.widget.TopWidget
+import com.abugdn.wid.widget.TopWidgetReceiver
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(onOpen: (String) -> Unit) {
-    val repo = LocalContext.current.repository
+    val context = LocalContext.current
+    val repo = context.repository
     val feed by repo.feed.collectAsStateWithLifecycle()
+    val widgets = remember { GlanceAppWidgetManager(context) }
+    var showWidgetHint by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        showWidgetHint = runCatching { widgets.getGlanceIds(TopWidget::class.java).isEmpty() }.getOrDefault(false)
+    }
     val scope = rememberCoroutineScope()
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -118,11 +129,48 @@ fun HomeScreen(onOpen: (String) -> Unit) {
                         }
                     }
                 }
+                if (showWidgetHint) {
+                    item {
+                        WidgetHint(onAdd = {
+                            scope.launch {
+                                // Pede ao launcher para fixar o widget; funciona mesmo quando
+                                // o widget não aparece na lista de widgets do launcher.
+                                val ok = runCatching {
+                                    widgets.requestPinGlanceAppWidget(TopWidgetReceiver::class.java)
+                                }.getOrDefault(false)
+                                if (ok) showWidgetHint = false
+                                else error = "Seu launcher não aceita adicionar widget pelo app. Use a lista de widgets da tela inicial."
+                            }
+                        }, onDismiss = { showWidgetHint = false })
+                    }
+                }
                 top?.let { item { TopCard(it, onOpen) } }
                 items(clusters.filter { it.id != top?.id }, key = { it.id }) { c ->
                     ClusterRow(c, onOpen)
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WidgetHint(onAdd: () -> Unit, onDismiss: () -> Unit) {
+    Card(
+        modifier = Modifier.padding(16.dp, 8.dp).fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text("Widget da principal do dia", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(
+                "Coloque a notícia mais importante do dia na sua tela inicial.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onAdd) { Text("Adicionar widget") }
+                androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Agora não") }
             }
         }
     }

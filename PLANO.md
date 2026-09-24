@@ -156,13 +156,15 @@ Misturar perspectivas para não ficar enviesado. Lista real em `backend/config/s
 
 ## 9. Como instalar o app (você e os amigos)
 
-1. No celular, instale o **Obtainium** (pelo F-Droid ou pelo GitHub dele).
-2. No Obtainium: **Adicionar app** → cole `https://github.com/AbuGDN/WID` → Adicionar → Instalar.
-   (Alternativa sem Obtainium: baixar o `.apk` mais recente em https://github.com/AbuGDN/WID/releases e abrir.)
-3. O Android vai pedir para permitir "instalar apps desconhecidos" — permita para o Obtainium (ou o navegador).
-4. Abra o WID uma vez, aceite as notificações e puxe para baixo para carregar.
-5. Widget: segure na tela inicial → Widgets → WID → "Principal do dia". Aumente a altura para ver também 2 secundárias.
-6. Recomendado: em Configurações → Apps → WID → Bateria, deixe **sem restrição**, para as notificações não atrasarem.
+1. Baixe o `.apk` mais recente em https://github.com/AbuGDN/WID/releases e abra (o app não está na Play Store).
+   O Android vai pedir para permitir "instalar apps desconhecidos" pelo navegador — permita.
+2. Para atualizar, basta baixar e abrir o APK novo por cima (os dados ficam).
+   Opcional: o **Obtainium** (também fora da Play Store: https://github.com/ImranR98/Obtainium/releases)
+   acompanha este repositório e avisa/instala as versões novas sozinho.
+3. Abra o WID uma vez, aceite as notificações e puxe para baixo para carregar.
+4. Widget: na tela Hoje, toque em **Adicionar widget** (funciona mesmo se o launcher não listar o widget).
+   Ou pela tela inicial: segure → Widgets → WID → "Principal do dia". Aumente a altura para ver 2 secundárias.
+5. Recomendado: em Configurações → Apps → WID → Bateria, deixe **sem restrição**, para as notificações não atrasarem.
 
 A cada mudança em `android/`, o GitHub compila um APK novo e publica em Releases; o Obtainium avisa e atualiza.
 A chave de assinatura (`android/app/wid.jks`) fica no repositório de propósito: toda build tem a mesma assinatura e atualiza por cima. Só quem tem acesso de escrita ao repo consegue publicar releases.
