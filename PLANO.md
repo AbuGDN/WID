@@ -147,14 +147,27 @@ Misturar perspectivas para não ficar enviesado. Lista real em `backend/config/s
 |---|---|---|
 | 0 | Repo, `sources.yaml`, decisão público/privado | — |
 | 1 ✅ | Script Python + Actions publicando `feed.json`/`top.json` | JSON atualiza sozinho a cada 30 min |
-| 2 | App Android: tela Hoje + detalhe + texto completo + tradução | Lê e traduz o feed no celular |
-| 3 | Widget Glance + notificações | Principal do dia na home; alerta de urgente |
-| 4 | Build automático + Obtainium | Amigos instalam e atualizam sozinhos |
+| 2 ✅ | App Android: tela Hoje + detalhe + texto completo + tradução | Lê e traduz o feed no celular |
+| 3 ✅ | Widget Glance + notificações | Principal do dia na home; alerta de urgente |
+| 4 ✅ | Build automático + Releases (Obtainium) | Amigos instalam e atualizam sozinhos |
 | 5 | Extras: filtros por tag, arquivo, ajuste fino de fontes | — |
 
 ---
 
-## 9. Como rodar o backend localmente
+## 9. Como instalar o app (você e os amigos)
+
+1. No celular, instale o **Obtainium** (pelo F-Droid ou pelo GitHub dele).
+2. No Obtainium: **Adicionar app** → cole `https://github.com/AbuGDN/WID` → Adicionar → Instalar.
+   (Alternativa sem Obtainium: baixar o `.apk` mais recente em https://github.com/AbuGDN/WID/releases e abrir.)
+3. O Android vai pedir para permitir "instalar apps desconhecidos" — permita para o Obtainium (ou o navegador).
+4. Abra o WID uma vez, aceite as notificações e puxe para baixo para carregar.
+5. Widget: segure na tela inicial → Widgets → WID → "Principal do dia". Aumente a altura para ver também 2 secundárias.
+6. Recomendado: em Configurações → Apps → WID → Bateria, deixe **sem restrição**, para as notificações não atrasarem.
+
+A cada mudança em `android/`, o GitHub compila um APK novo e publica em Releases; o Obtainium avisa e atualiza.
+A chave de assinatura (`android/app/wid.jks`) fica no repositório de propósito: toda build tem a mesma assinatura e atualiza por cima. Só quem tem acesso de escrita ao repo consegue publicar releases.
+
+## 10. Como rodar o backend localmente
 
 ```bash
 cd backend

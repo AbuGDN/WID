@@ -16,6 +16,8 @@ android {
         // O CI passa o número da execução, para cada APK ser uma atualização válida.
         versionCode = (System.getenv("WID_VERSION_CODE") ?: "1").toInt()
         versionName = "1.0.${System.getenv("WID_VERSION_CODE") ?: "0"}"
+        // Só processadores de celular: corta as bibliotecas nativas x86 do ML Kit.
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
     // Chave fixa no repositório: app de uso pessoal, e assim toda build (local ou CI)
