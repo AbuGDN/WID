@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Mundo PT</title>
+<item>
+  <title>Israel ataca alvos do Hezbollah em Beirute</title>
+  <link>https://example-br.com/mundo/beirute</link>
+  <description>&lt;img src="https://example-br.com/f.jpg"/&gt;Exército israelense diz ter atingido depósitos de armas.</description>
+  <pubDate>Thu, 24 Sep 2026 08:40:00 GMT</pubDate>
+</item>
+<item>
+  <title>Seleção vence amistoso em São Paulo</title>
+  <link>https://example-br.com/esporte</link>
+  <description>Ataque brilhou no segundo tempo.</description>
+  <pubDate>Thu, 24 Sep 2026 09:30:00 GMT</pubDate>
+</item>
+</channel></rss>

@@ -3,6 +3,17 @@
 App mobile de notícias sobre conflitos no Oriente Médio e no mundo, com foco em Israel.
 Público: 1 dono + até 4 amigos. Requisitos: **custo zero**, **mobile**, **widget com a notícia principal do dia**.
 
+## Decisões tomadas
+
+| Pergunta | Decisão |
+|---|---|
+| Plataforma | **Android** (todos) |
+| Repo público | **Sim** — `AbuGDN/WID` já é público |
+| Guardar notícias | **Sim, texto completo** — guardado **no celular** (ver §5) |
+| Notificações | **Sim** — geradas pelo próprio app (sem serviço externo) |
+| Idioma | **Português**; notícias estrangeiras traduzidas no celular |
+| Escopo | **Notícias de guerra em geral**, com peso extra para Israel/Oriente Médio |
+
 ---
 
 ## 1. Decisão mais importante: Android vs iPhone
@@ -30,7 +41,7 @@ Público: 1 dono + até 4 amigos. Requisitos: **custo zero**, **mobile**, **widg
  │          4. calcula "notícia principal do dia"                         │
  │          5. grava feed.json + top.json                                 │
  │                                                                        │
- │  GitHub Pages  →  https://<user>.github.io/wid/feed.json               │
+ │  branch gh-pages → raw.githubusercontent.com/AbuGDN/WID/gh-pages/…     │
  │  GitHub Releases → APK do app (build automático)                       │
  └────────────────────────────────────────────────────────────────────────┘
                  │ HTTPS (JSON estático)
@@ -39,8 +50,10 @@ Público: 1 dono + até 4 amigos. Requisitos: **custo zero**, **mobile**, **widg
  │  App (Kotlin + Jetpack Compose)          │
  │  Widget (Jetpack Glance)                 │
  │  WorkManager atualiza a cada 30–60 min   │
+ │  Baixa o texto completo e guarda (Room)  │
+ │  Traduz EN→PT no aparelho (ML Kit)       │
+ │  Notificação local p/ notícia "urgente"  │
  └──────────────────────────────────────────┘
-       (opcional) ntfy.sh → push de "urgente"
 ```
 
 Por que um "backend" em vez do app ler os RSS direto: o processamento (dedupe, ranking) fica num lugar só, os 5 celulares veem exatamente a mesma "principal do dia", e o widget só precisa baixar um JSON pequeno (economiza bateria).
@@ -50,58 +63,62 @@ Por que um "backend" em vez do app ler os RSS direto: o processamento (dedupe, r
 | Peça | Serviço | Custo |
 |---|---|---|
 | Coleta/processamento | GitHub Actions | R$ 0 (repo público: ilimitado; privado: 2.000 min/mês — cron de 30 min usa ~1.450) |
-| Hospedagem do JSON | GitHub Pages | R$ 0 (**exige repo público**; ver §7) |
+| Hospedagem do JSON | branch `gh-pages` via raw.githubusercontent.com (ou GitHub Pages) | R$ 0 |
 | Distribuição do app | GitHub Releases + [Obtainium](https://github.com/ImranR98/Obtainium) p/ auto‑update | R$ 0 |
-| Push (opcional) | ntfy.sh | R$ 0 |
-| Tradução (opcional) | ML Kit on‑device no Android | R$ 0 |
+| Notificações | Locais, disparadas pelo WorkManager | R$ 0 |
+| Tradução | ML Kit Translation on‑device (offline, ilimitado) | R$ 0 |
+| Texto completo | Extraído no celular (Readability) | R$ 0 |
 
 ---
 
 ## 3. Fontes (RSS)
 
-Misturar perspectivas para não ficar enviesado. URLs a validar na implementação.
+Misturar perspectivas para não ficar enviesado. Lista real em `backend/config/sources.yaml`; a saúde de cada fonte é publicada em `sources_status.json` a cada rodada, para podar as que quebrarem.
 
 - **Israel:** Times of Israel, Jerusalem Post, Ynetnews, Haaretz (manchetes)
 - **Mundo árabe:** Al Jazeera English, Al‑Monitor
 - **Internacionais:** BBC Middle East, The Guardian (Middle East / World), AP (via Google News), DW
 - **Em português:** G1 Mundo, Folha Mundo, CNN Brasil Internacional
-- **Coringa:** Google News RSS por busca, ex.
-  `https://news.google.com/rss/search?q=Israel+guerra&hl=pt-BR&gl=BR&ceid=BR:pt-419`
-- **Outros conflitos:** Ucrânia/Rússia, Sudão, Iêmen etc. via Google News RSS por tema
-
-Arquivo `sources.yaml` com: nome, URL, idioma, região, peso.
+- **Guerras em geral:** Kyiv Independent + feeds "mundo" dos veículos acima, filtrados por termos de guerra
+- Google News RSS **não** é usado: os links são redirecionamentos que impedem baixar o texto completo.
 
 ---
 
-## 4. Processamento (script Python)
+## 4. Processamento (script Python) — ✅ implementado em `backend/`
 
 1. **Coleta** — `feedparser` + `httpx`, timeout curto; fonte que falhar é ignorada.
-2. **Filtro** — lista de palavras-chave PT/EN com pesos (ex.: `Israel`, `IDF`, `Gaza`, `Hamas`, `Hezbollah`, `Irã/Iran`, `Houthi`, `Cisjordânia/West Bank`, `Líbano`, `Síria`, `Ucrânia`…). Tag por conflito.
-3. **Agrupamento** — títulos normalizados + similaridade (TF‑IDF/Jaccard). Mesma história em 6 veículos vira 1 item com 6 links.
-4. **Ranking da principal do dia** —
-   `score = nº de fontes distintas × peso das palavras-chave × decaimento por idade (meia-vida ~6h)`, bônus para tag Israel.
-   Opcional depois: LLM com free tier para resumir/escolher (só se continuar grátis).
-5. **Saída**
-   - `feed.json` — últimas ~48h, agrupadas, com tags e fontes
-   - `top.json` — 1 item: título, resumo curto, fonte, horário, link, imagem
-   - `history/AAAA-MM-DD.json` — principal de cada dia (arquivo leve)
-6. **Push opcional** — se um grupo novo passar de um score alto (ex.: ≥ 8 fontes em 1h), envia para um tópico ntfy privado.
+2. **Filtro** (`config/keywords.yaml`) — entra se tiver ≥1 termo de guerra (PT/EN) **e** (uma região/ator **ou** ≥2 termos de guerra). Assim "ataque" no futebol ou a bolsa de Tel Aviv ficam de fora. Cada notícia recebe tags: israel, gaza, cisjordania, libano, ira, iemen, siria, iraque, ucrania_russia, sudao, asia, africa, otan.
+3. **Agrupamento** — tokens do título + dicionário PT↔EN (Beirute→beirut, ataca→attack…), para a mesma história em português e inglês virar 1 grupo.
+4. **Ranking**
+   - `day_score = soma dos pesos das fontes × relevância × bônus da região` (Israel 1.5, Gaza 1.4…)
+   - `score` (feed) = `day_score` com meia-vida de 6h
+   - **Principal do dia** = maior `day_score` das últimas 24h
+   - Título do grupo: prefere a versão **em português** quando algum veículo brasileiro cobriu
+5. **Urgente** — grupo novo com ≥5 veículos em 2h (ou "urgente/breaking" no título + 2 veículos) → `urgent: true`, o app notifica.
+6. **Saída** (branch `gh-pages`)
+   - `feed.json` — últimas 48h, agrupadas, com tags e todos os links
+   - `top.json` — principal + 4 secundárias (o que o widget baixa)
+   - `history/AAAA-MM-DD.json` + `history/index.json` — principal de cada dia
+   - `sources_status.json` — quais fontes funcionaram na última rodada
 
 ---
 
 ## 5. App Android
 
-- **Stack:** Kotlin, Jetpack Compose, Retrofit/Ktor, kotlinx.serialization, Room (cache offline), WorkManager, **Glance** (widget), Coil (imagens).
+- **Stack:** Kotlin, Jetpack Compose, Ktor/OkHttp, kotlinx.serialization, Room, WorkManager, **Glance** (widget), Coil, **ML Kit Translation**, Readability4J.
+- **Texto completo:** ao sincronizar, o app baixa a página de cada notícia, extrai o texto (Readability4J) e guarda no Room. Fica no celular (não no repo público, que seria republicar matérias abertamente). Sites com paywall (Haaretz, parte da Folha) ficam só com o resumo.
+- **Tradução:** título, resumo e texto em inglês são traduzidos para PT pelo ML Kit, offline, sem limite. O modelo EN→PT (~30 MB) baixa uma vez só, no Wi‑Fi. Botão "ver original" em cada notícia.
+- **Notificações:** a cada sincronização, grupos com `urgent: true` ainda não vistos viram notificação (título já traduzido). Opção de receber também "principal do dia" às 8h. Sem servidor de push: atraso de até ~30 min, suficiente para o uso.
 - **Telas**
   1. **Hoje** — card grande com a principal do dia + lista agrupada
   2. **Filtros** — chips por conflito (Israel/Gaza, Líbano, Irã, Iêmen, Ucrânia, Outros)
-  3. **Detalhe** — resumo + lista de veículos que cobriram, abre o link no navegador (Custom Tabs)
+  3. **Detalhe** — texto completo traduzido + lista de veículos que cobriram + "abrir no site"
   4. **Arquivo** — principal de cada dia anterior
 - **Widget** (2 tamanhos)
   - Pequeno: título da principal + horário
   - Médio: título + fonte + nº de veículos + 2 manchetes secundárias
   - Toque abre o app no detalhe. Atualização via WorkManager (mínimo do Android é 15 min; usar 30–60).
-- **Idioma:** manchetes no original; botão "traduzir" com ML Kit on‑device (opcional, fase 3).
+- **Idioma:** tudo em português por padrão.
 
 ---
 
@@ -115,12 +132,11 @@ Arquivo `sources.yaml` com: nome, URL, idioma, região, peso.
 
 ## 7. Pontos de atenção
 
-- **Repo público vs privado:** GitHub Pages grátis só em repo público. Opções:
-  (a) deixar este repo público (é só código + manchetes públicas — recomendado),
-  (b) repo privado para o código + um repo público só com os JSONs,
-  (c) Cloudflare Pages/Workers (free tier) no lugar do Pages.
-- **Cron do GitHub** atrasa às vezes (5–15 min) e é desativado após 60 dias sem atividade no repo — os commits automáticos de dados já contam como atividade.
-- **Direitos autorais:** guardar só título, trecho curto do RSS e link. Não copiar matérias inteiras.
+- **Repo público:** o que é publicado é só título, resumo do RSS e link. O texto completo fica apenas nos celulares.
+- **Cron do GitHub** atrasa às vezes (5–15 min). O GitHub também desliga crons de repos parados há 60 dias; o push na `gh-pages` a cada rodada conta como atividade.
+- **A `gh-pages` é recriada com 1 commit a cada rodada** para o repositório não crescer infinitamente.
+- **Crons só rodam na branch padrão.** Hoje a branch padrão é `claude/adoring-hamilton-kr5stn`; se mudar para `main`, o cron segue a `main`.
+- **Qualidade da tradução do ML Kit** é boa para manchetes, razoável para texto longo. Se incomodar, dá para testar um LLM com free tier só nos títulos.
 - **Imagens:** usar a URL que vem no RSS; sem re-hospedar.
 
 ---
@@ -130,18 +146,19 @@ Arquivo `sources.yaml` com: nome, URL, idioma, região, peso.
 | Fase | Entrega | Pronto quando |
 |---|---|---|
 | 0 | Repo, `sources.yaml`, decisão público/privado | — |
-| 1 | Script Python + Actions + Pages publicando `feed.json`/`top.json` | JSON atualiza sozinho a cada 30 min |
-| 2 | App Android: tela Hoje + detalhe + cache offline | Lê o feed no celular |
-| 3 | Widget Glance | Principal do dia na home |
+| 1 ✅ | Script Python + Actions publicando `feed.json`/`top.json` | JSON atualiza sozinho a cada 30 min |
+| 2 | App Android: tela Hoje + detalhe + texto completo + tradução | Lê e traduz o feed no celular |
+| 3 | Widget Glance + notificações | Principal do dia na home; alerta de urgente |
 | 4 | Build automático + Obtainium | Amigos instalam e atualizam sozinhos |
-| 5 | Extras: filtros, arquivo, push ntfy, tradução | — |
+| 5 | Extras: filtros por tag, arquivo, ajuste fino de fontes | — |
 
 ---
 
-## 9. Perguntas em aberto
+## 9. Como rodar o backend localmente
 
-1. Todos os 5 usam Android? (define se o plano acima fica como está)
-2. Repo público tudo bem? (ver §7)
-3. Quer push de "urgente" ou só o widget basta?
-4. Manchetes em português, inglês ou os dois?
-5. Quais outros conflitos entram além de Israel/Oriente Médio?
+```bash
+cd backend
+pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -q                 # testes com feeds de exemplo
+python -m wid.build --out ../site   # baixa os feeds de verdade e gera os JSONs
+```

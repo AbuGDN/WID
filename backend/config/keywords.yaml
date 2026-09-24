@@ -1,0 +1,119 @@
+# Termos comparados com título + resumo em minúsculas (acentos importam).
+# "termo*" casa qualquer palavra que comece com "termo".
+#
+# Uma notícia entra no feed se tiver pelo menos 1 termo de guerra E
+# (pelo menos 1 tag de região OU pelo menos 2 termos de guerra diferentes).
+
+war_terms:
+  # português
+  - guerra*
+  - conflito armado
+  - ataque*
+  - atacou
+  - atacam
+  - bombardei*
+  - bombardeio*
+  - bomba*
+  - míssil
+  - mísseis
+  - foguete*
+  - drone*
+  - artilharia
+  - cessar-fogo
+  - trégua
+  - invasão
+  - invadi*
+  - tropas
+  - exército*
+  - militar*
+  - soldado*
+  - reféns
+  - refém
+  - ofensiva*
+  - combate*
+  - confronto*
+  - frente de batalha
+  - linha de frente
+  - defesa aérea
+  - intercept*
+  - terroris*
+  - milícia*
+  - rebeldes
+  - armas nucleares
+  - mortos em ataque
+  - baixas
+  # inglês
+  - war
+  - wars
+  - wartime
+  - warfare
+  - armed conflict
+  - attack*
+  - strike
+  - strikes
+  - airstrike*
+  - air strike*
+  - bombing*
+  - bombard*
+  - bomb
+  - bombs
+  - shelling
+  - missile*
+  - rocket*
+  - drone*
+  - artillery
+  - ceasefire
+  - cease-fire
+  - truce
+  - invasion
+  - invade*
+  - troops
+  - army
+  - military
+  - soldier*
+  - hostage*
+  - offensive
+  - fighting
+  - clashes
+  - front line*
+  - frontline*
+  - air defense
+  - air defence
+  - intercept*
+  - terror*
+  - militia*
+  - militant*
+  - rebels
+  - insurgent*
+  - nuclear weapon*
+  - casualties
+  - killed in
+
+# Tag -> termos. A tag aparece no app como filtro. As tags em `boost` pesam mais
+# no ranking.
+tags:
+  israel: [israel*, idf, fdi, netanyahu, tel aviv, jerusalém, jerusalem, knesset, mossad]
+  gaza: [gaza, hamas, rafah, khan yunis, khan younis, jihad islâmica, islamic jihad]
+  cisjordania: [cisjordânia, west bank, jenin, nablus, ramallah, colonos, settler*]
+  libano: [líbano, lebanon, lebanese, libanês, libanes*, hezbol*, hizbol*, hizbul*, hezbollah, beirute, beirut]
+  ira: [irã, iran*, teerã, tehran, khamenei, guarda revolucionária, revolutionary guard*, irgc]
+  iemen: [iêmen, yemen*, houthi*, huthi*, mar vermelho, red sea]
+  siria: [síria, sírio*, syria*, damasco, damascus, assad]
+  iraque: [iraque, iraqi*, iraq, bagdá, baghdad]
+  ucrania_russia: [ucrânia, ucranian*, ukrain*, kiev, kyiv, zelensky*, rússia, russo*, russa*, russia*, putin, kremlin, donbas*, crimeia, crimea]
+  sudao: [sudão, sudan*, darfur, cartum, khartoum]
+  asia: [taiwan, coreia do norte, north korea*, caxemira, kashmir, myanmar, índia e paquistão, india and pakistan]
+  africa: [sahel, mali, burkina faso, níger, somália, somalia, al-shabaab, congo, etiópia, ethiopia, líbia, libya]
+  otan: [otan, nato]
+
+boost:
+  israel: 1.5
+  gaza: 1.4
+  cisjordania: 1.3
+  libano: 1.3
+  ira: 1.3
+  iemen: 1.2
+  siria: 1.1
+
+# Palavras que marcam urgência no título.
+urgent_terms: [urgente, breaking, "última hora", ao vivo agora]

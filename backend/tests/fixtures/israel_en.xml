@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+<channel><title>Israel News EN</title>
+<item>
+  <title>Israel strikes Hezbollah targets in Beirut</title>
+  <link>https://example-il.com/beirut-strike?utm_source=rss</link>
+  <description>&lt;p&gt;The IDF said jets hit Hezbollah weapons depots in southern Beirut overnight.&lt;/p&gt;</description>
+  <pubDate>Thu, 24 Sep 2026 08:00:00 GMT</pubDate>
+  <media:content url="https://example-il.com/img/beirut.jpg" medium="image"/>
+</item>
+<item>
+  <title>Tel Aviv stock exchange closes higher</title>
+  <link>https://example-il.com/stocks</link>
+  <description>Markets rallied on tech shares.</description>
+  <pubDate>Thu, 24 Sep 2026 09:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Ukraine says Russian drones hit Kyiv power grid</title>
+  <link>https://example-il.com/kyiv</link>
+  <description>Air defense intercepted most of the drones, officials said.</description>
+  <pubDate>Thu, 24 Sep 2026 06:00:00 GMT</pubDate>
+</item>
+</channel></rss>

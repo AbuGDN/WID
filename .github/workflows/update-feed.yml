@@ -1,0 +1,60 @@
+name: Atualizar feed
+
+on:
+  schedule:
+    - cron: "7,37 * * * *" # a cada 30 min, fora do minuto 0 (menos fila no GitHub)
+  workflow_dispatch:
+  push:
+    branches-ignore: [gh-pages]
+    paths: ["backend/**", ".github/workflows/update-feed.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-feed
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+
+      - name: Testes
+        working-directory: backend
+        run: python -m pytest -q
+
+      - name: Abrir branch gh-pages em ./site
+        run: |
+          if git fetch --depth=1 origin gh-pages; then
+            git worktree add site FETCH_HEAD
+          else
+            mkdir site
+          fi
+
+      - name: Gerar JSONs
+        working-directory: backend
+        run: python -m wid.build --out ../site
+
+      # Sempre um único commit na gh-pages: o histórico não cresce a cada 30 min,
+      # e o push mantém o repositório "ativo" (o GitHub desliga crons parados há 60 dias).
+      - name: Publicar na gh-pages
+        working-directory: site
+        run: |
+          rm -rf .git
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "feed $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
