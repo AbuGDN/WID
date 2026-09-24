@@ -18,10 +18,13 @@ import com.abugdn.wid.data.Feed
 import com.abugdn.wid.repository
 import com.abugdn.wid.ui.EXTRA_CLUSTER_ID
 import com.abugdn.wid.ui.MainActivity
+import java.time.Instant
 
 object Notifier {
     private const val CHANNEL_URGENT = "urgent"
     private const val CHANNEL_TOP = "top"
+    private const val CHANNEL_DIGEST = "digest"
+    private const val DIGEST_ID = 8_000
     private const val TOP_MIN_INTERVAL_MS = 4 * 60 * 60 * 1000L
 
     fun createChannels(context: Context) {
@@ -32,19 +35,30 @@ object Notifier {
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_TOP, context.getString(R.string.channel_top), NotificationManager.IMPORTANCE_DEFAULT)
         )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_DIGEST, context.getString(R.string.channel_digest), NotificationManager.IMPORTANCE_DEFAULT)
+        )
     }
 
     /**
      * Notifica histórias urgentes ainda não vistas e a troca da principal do dia
-     * (no máximo a cada 4 h). Na primeira sincronização só marca tudo como visto.
+     * (no máximo a cada 4 h), respeitando regiões e horário silencioso dos ajustes.
+     * Na primeira sincronização só marca tudo como visto.
      */
     fun handle(context: Context, feed: Feed) {
-        val prefs = context.repository.storage.prefs
+        val repo = context.repository
+        val settings = repo.settings.value
+        val prefs = repo.storage.prefs
         val notified = prefs.getStringSet("notified", emptySet())!!.toMutableSet()
         val firstRun = !prefs.getBoolean("initialized", false)
+        // No horário silencioso nada toca; o que surgir fica para o resumo diário.
+        val silent = firstRun || settings.isQuiet()
         val urgent = feed.clusters.filter { it.urgent && it.id !in notified }
 
-        if (!firstRun) urgent.forEach { notify(context, CHANNEL_URGENT, "Urgente", it) }
+        if (!silent && settings.notifyUrgent) {
+            urgent.filter { settings.matchesRegion(it.tags) }
+                .forEach { notify(context, CHANNEL_URGENT, "Urgente", it) }
+        }
         notified += urgent.map { it.id }
         notified.retainAll(feed.clusters.map { it.id }.toSet())
 
@@ -52,7 +66,8 @@ object Notifier {
         val editor = prefs.edit().putStringSet("notified", notified).putBoolean("initialized", true)
         if (top != null && top.id != prefs.getString("top_id", null)) {
             val now = System.currentTimeMillis()
-            if (!firstRun && now - prefs.getLong("top_at", 0) >= TOP_MIN_INTERVAL_MS && top.id !in urgent.map { it.id }) {
+            val due = now - prefs.getLong("top_at", 0) >= TOP_MIN_INTERVAL_MS
+            if (!silent && due && settings.notifyTop && settings.matchesRegion(top.tags) && top.id !in urgent.map { it.id }) {
                 notify(context, CHANNEL_TOP, "Principal do dia", top)
             }
             editor.putString("top_id", top.id).putLong("top_at", now)
@@ -60,20 +75,52 @@ object Notifier {
         editor.apply()
     }
 
-    @SuppressLint("MissingPermission") // checado logo abaixo
-    private fun notify(context: Context, channel: String, label: String, cluster: Cluster) {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
+    /** Resumo diário: as 3 histórias de maior peso das últimas 24 h. */
+    @SuppressLint("MissingPermission") // checado em canNotify
+    fun digest(context: Context, feed: Feed) {
+        if (!canNotify(context)) return
+        val repo = context.repository
+        val settings = repo.settings.value
+        val cutoff = Instant.now().minusSeconds(24 * 3600)
+        val best = feed.clusters
+            .filter { runCatching { Instant.parse(it.updated).isAfter(cutoff) }.getOrDefault(true) }
+            .filter { settings.matchesRegion(it.tags) }
+            .sortedByDescending { it.dayScore }
+            .take(3)
+        if (best.isEmpty()) return
 
-        val title = context.repository.translator.display(cluster.title, cluster.lang)
+        val titles = best.map { repo.translator.display(it.title, it.lang) }
+        val style = NotificationCompat.InboxStyle()
+        titles.forEach { style.addLine("• $it") }
+        val notification = NotificationCompat.Builder(context, CHANNEL_DIGEST)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("Resumo do dia")
+            .setContentText(titles.first())
+            .setStyle(style)
+            .setContentIntent(openIntent(context, best.first().id))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(DIGEST_ID, notification)
+    }
+
+    private fun canNotify(context: Context) = Build.VERSION.SDK_INT < 33 ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    private fun openIntent(context: Context, clusterId: String): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)
-            .putExtra(EXTRA_CLUSTER_ID, cluster.id)
+            .putExtra(EXTRA_CLUSTER_ID, clusterId)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        val pending = PendingIntent.getActivity(
-            context, cluster.id.hashCode(), intent,
+        return PendingIntent.getActivity(
+            context, clusterId.hashCode(), intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+    }
+
+    @SuppressLint("MissingPermission") // checado em canNotify
+    private fun notify(context: Context, channel: String, label: String, cluster: Cluster) {
+        if (!canNotify(context)) return
+        val title = context.repository.translator.display(cluster.title, cluster.lang)
+        val pending = openIntent(context, cluster.id)
         val notification = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("$label · ${cluster.sourcesCount} veículos")

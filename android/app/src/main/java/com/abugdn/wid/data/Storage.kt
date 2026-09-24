@@ -3,6 +3,7 @@ package com.abugdn.wid.data
 import android.content.Context
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 
@@ -11,6 +12,7 @@ class Storage(context: Context) {
     private val dir = context.filesDir
     private val feedFile = File(dir, "feed.json")
     private val translationsFile = File(dir, "translations.json")
+    private val savedFile = File(dir, "saved.json")
     private val articlesDir = File(dir, "articles").apply { mkdirs() }
     val prefs = context.getSharedPreferences("wid", Context.MODE_PRIVATE)
 
@@ -41,10 +43,19 @@ class Storage(context: Context) {
     fun saveFullText(id: String, text: FullText) =
         writeAtomic(File(articlesDir, "$id.json"), json.encodeToString(FullText.serializer(), text))
 
-    /** Apaga textos completos com mais de [maxAgeDays] dias. */
-    fun pruneFullTexts(maxAgeDays: Int = 30) {
+    fun loadSaved(): List<Cluster> = runCatching {
+        json.decodeFromString(ListSerializer(Cluster.serializer()), savedFile.readText())
+    }.getOrDefault(emptyList())
+
+    fun saveSaved(list: List<Cluster>) =
+        writeAtomic(savedFile, json.encodeToString(ListSerializer(Cluster.serializer()), list))
+
+    /** Apaga textos completos com mais de [maxAgeDays] dias, menos os das notícias salvas. */
+    fun pruneFullTexts(keep: Set<String>, maxAgeDays: Int = 30) {
         val limit = System.currentTimeMillis() - maxAgeDays * 86_400_000L
-        articlesDir.listFiles()?.filter { it.lastModified() < limit }?.forEach { it.delete() }
+        articlesDir.listFiles()
+            ?.filter { it.lastModified() < limit && it.nameWithoutExtension !in keep }
+            ?.forEach { it.delete() }
     }
 
     private fun writeAtomic(file: File, content: String) {

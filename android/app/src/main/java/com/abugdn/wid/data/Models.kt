@@ -44,6 +44,13 @@ data class ArticleRef(
     val image: String? = null,
 )
 
+/** history/AAAA-MM-DD.json: a principal de um dia. */
+@Serializable
+data class HistoryDay(val date: String, val top: Cluster)
+
+@Serializable
+data class HistoryIndex(val days: List<String> = emptyList())
+
 /** Texto completo baixado e guardado no aparelho. */
 @Serializable
 data class FullText(

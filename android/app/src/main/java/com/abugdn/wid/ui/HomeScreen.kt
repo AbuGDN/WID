@@ -16,11 +16,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -33,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,7 +57,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onOpen: (String) -> Unit) {
+fun HomeScreen(tag: String?, onTag: (String?) -> Unit, onOpen: (String) -> Unit, onSettings: () -> Unit) {
     val context = LocalContext.current
     val repo = context.repository
     val feed by repo.feed.collectAsStateWithLifecycle()
@@ -66,7 +69,6 @@ fun HomeScreen(onOpen: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var tag by rememberSaveable { mutableStateOf<String?>(null) }
 
     fun refresh() = scope.launch {
         refreshing = true
@@ -75,8 +77,11 @@ fun HomeScreen(onOpen: (String) -> Unit) {
     }
 
     Scaffold(
+        contentWindowInsets = NoInsets,
         topBar = {
-            TopAppBar(title = {
+            TopAppBar(actions = {
+                IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, contentDescription = "Ajustes") }
+            }, title = {
                 Column {
                     Text("WID · Guerras", fontWeight = FontWeight.Bold)
                     feed?.let {
@@ -117,12 +122,12 @@ fun HomeScreen(onOpen: (String) -> Unit) {
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             item {
-                                FilterChip(selected = tag == null, onClick = { tag = null }, label = { Text("Tudo") })
+                                FilterChip(selected = tag == null, onClick = { onTag(null) }, label = { Text("Tudo") })
                             }
                             items(tagsPresent) { key ->
                                 FilterChip(
                                     selected = tag == key,
-                                    onClick = { tag = if (tag == key) null else key },
+                                    onClick = { onTag(if (tag == key) null else key) },
                                     label = { Text(TAG_LABELS.getValue(key)) },
                                 )
                             }
@@ -212,7 +217,7 @@ private fun TopCard(c: Cluster, onOpen: (String) -> Unit) {
 }
 
 @Composable
-private fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
+fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
     val translator = LocalContext.current.repository.translator
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onOpen(c.id) }.padding(16.dp, 12.dp),

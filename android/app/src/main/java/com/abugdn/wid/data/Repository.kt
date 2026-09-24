@@ -4,6 +4,9 @@ import android.content.Context
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +16,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
 
-const val FEED_URL = "https://raw.githubusercontent.com/AbuGDN/WID/gh-pages/feed.json"
+private const val DATA_URL = "https://raw.githubusercontent.com/AbuGDN/WID/gh-pages"
+const val FEED_URL = "$DATA_URL/feed.json"
 
 private const val USER_AGENT =
     "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Mobile Safari/537.36"
@@ -21,6 +25,7 @@ private const val USER_AGENT =
 class Repository(context: Context) {
     val storage = Storage(context)
     val translator = Translator(storage)
+    val settings = SettingsStore(storage.prefs)
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
@@ -30,12 +35,18 @@ class Repository(context: Context) {
     private val _feed = MutableStateFlow(storage.loadFeed())
     val feed: StateFlow<Feed?> = _feed.asStateFlow()
 
+    private val _saved = MutableStateFlow(storage.loadSaved())
+    val saved: StateFlow<List<Cluster>> = _saved.asStateFlow()
+
+    private val _archive = MutableStateFlow<List<HistoryDay>?>(null)
+    val archive: StateFlow<List<HistoryDay>?> = _archive.asStateFlow()
+
     /** Baixa o feed, traduz títulos/resumos em inglês e só então publica para a UI. */
     suspend fun refresh(): Result<Feed> = withContext(Dispatchers.IO) {
         runCatching {
             val raw = get("$FEED_URL?t=${System.currentTimeMillis() / 60_000}")
             val feed = json.decodeFromString<Feed>(raw)
-            val texts = feedTexts(feed)
+            val texts = feedTexts(feed) + textsOf(_saved.value) + textsOf(_archive.value.orEmpty().map { it.top })
             translator.translateAll(texts)
             storage.saveTranslations(keep = texts)
             storage.saveFeed(raw)
@@ -44,8 +55,10 @@ class Repository(context: Context) {
         }
     }
 
-    private fun feedTexts(feed: Feed): Set<String> = buildSet {
-        for (c in feed.clusters) {
+    private fun feedTexts(feed: Feed): Set<String> = textsOf(feed.clusters)
+
+    private fun textsOf(clusters: List<Cluster>): Set<String> = buildSet {
+        for (c in clusters) {
             if (c.lang != "pt") {
                 add(c.title)
                 if (c.summary.isNotBlank()) add(c.summary)
@@ -54,7 +67,36 @@ class Repository(context: Context) {
         }
     }
 
-    fun cluster(id: String): Cluster? = _feed.value?.clusters?.firstOrNull { it.id == id }
+    /** Procura no feed atual, depois nas salvas e no arquivo. */
+    fun cluster(id: String): Cluster? =
+        _feed.value?.clusters?.firstOrNull { it.id == id }
+            ?: _saved.value.firstOrNull { it.id == id }
+            ?: _archive.value?.firstOrNull { it.top.id == id }?.top
+
+    fun isSaved(id: String) = _saved.value.any { it.id == id }
+
+    /** Salva (sem prazo de validade) ou remove dos salvos. */
+    fun toggleSaved(cluster: Cluster) {
+        val list = _saved.value
+        val next = if (list.any { it.id == cluster.id }) list.filter { it.id != cluster.id } else listOf(cluster) + list
+        storage.saveSaved(next)
+        _saved.value = next
+    }
+
+    /** Principal de cada um dos últimos [days] dias (history/ no servidor). */
+    suspend fun loadArchive(days: Int = 60): Result<List<HistoryDay>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val index = json.decodeFromString<HistoryIndex>(get("$DATA_URL/history/index.json?t=${System.currentTimeMillis() / 600_000}"))
+            val list = coroutineScope {
+                index.days.take(days).map { day ->
+                    async { runCatching { json.decodeFromString<HistoryDay>(get("$DATA_URL/history/$day.json")) }.getOrNull() }
+                }.awaitAll().filterNotNull()
+            }
+            translator.translateAll(textsOf(list.map { it.top }))
+            _archive.value = list
+            list
+        }
+    }
 
     /**
      * Texto completo da história. Prefere um veículo em português (não precisa
@@ -98,7 +140,7 @@ class Repository(context: Context) {
     suspend fun prefetch(feed: Feed, limit: Int = 10) {
         val top = listOfNotNull(feed.topOfDay) + feed.clusters.take(limit)
         for (c in top.distinctBy { it.id }) fullText(c)
-        storage.pruneFullTexts()
+        storage.pruneFullTexts(keep = _saved.value.map { it.id }.toSet())
     }
 
     private fun get(url: String): String {
