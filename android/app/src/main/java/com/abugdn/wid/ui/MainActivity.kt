@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.abugdn.wid.repository
 import com.abugdn.wid.sync.SyncWorker
@@ -95,12 +96,21 @@ private fun App(openCluster: String?, onOpenCluster: (String?) -> Unit) {
     var tab by rememberSaveable { mutableStateOf(Tab.HOME) }
     var tag by rememberSaveable { mutableStateOf<String?>(null) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    var storyOpen by rememberSaveable { mutableStateOf(false) }
+    // Aparece a cada abertura até a pessoa marcar "não mostrar de novo".
+    var whatsNewOpen by rememberSaveable { mutableStateOf(repo.shouldShowWhatsNew()) }
+    if (whatsNewOpen) {
+        WhatsNewDialog(repo.updater.installedName) { dontShowAgain ->
+            if (dontShowAgain) repo.dismissWhatsNew()
+            whatsNewOpen = false
+        }
+    }
 
     val detail = remember(openCluster, feed, saved, archive) { openCluster?.let(repo::cluster) }
 
     Scaffold(
         bottomBar = {
-            if (openCluster == null && !settingsOpen) {
+            if (openCluster == null && !settingsOpen && !storyOpen) {
                 NavigationBar {
                     Tab.entries.forEach { t ->
                         NavigationBarItem(
@@ -114,7 +124,8 @@ private fun App(openCluster: String?, onOpenCluster: (String?) -> Unit) {
             }
         },
     ) { padding ->
-        Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
+        // O "dia em 1 minuto" ocupa a tela inteira, inclusive atrás da barra de navegação.
+        Box(Modifier.padding(bottom = if (storyOpen) 0.dp else padding.calculateBottomPadding())) {
             when {
                 openCluster != null -> {
                     BackHandler { onOpenCluster(null) }
@@ -123,6 +134,10 @@ private fun App(openCluster: String?, onOpenCluster: (String?) -> Unit) {
                     } else {
                         MissingScreen(onBack = { onOpenCluster(null) })
                     }
+                }
+                storyOpen -> {
+                    BackHandler { storyOpen = false }
+                    StoryScreen(onClose = { storyOpen = false }, onOpen = { storyOpen = false; onOpenCluster(it) })
                 }
                 settingsOpen -> {
                     BackHandler { settingsOpen = false }
@@ -136,6 +151,7 @@ private fun App(openCluster: String?, onOpenCluster: (String?) -> Unit) {
                             onTag = { tag = it },
                             onOpen = { onOpenCluster(it) },
                             onSettings = { settingsOpen = true },
+                            onStory = { storyOpen = true },
                         )
                         Tab.MAP -> MapScreen(onRegion = { tag = it; tab = Tab.HOME })
                         Tab.ARCHIVE -> ArchiveScreen(onOpen = { onOpenCluster(it) })

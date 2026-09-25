@@ -52,6 +52,7 @@ import com.abugdn.wid.data.ThemeMode
 import com.abugdn.wid.repository
 import com.abugdn.wid.sync.DigestWorker
 import com.abugdn.wid.widget.CompactWidgetReceiver
+import com.abugdn.wid.widget.RegionWidgetReceiver
 import com.abugdn.wid.widget.TopWidgetReceiver
 import kotlinx.coroutines.launch
 
@@ -251,10 +252,17 @@ fun SettingsScreen(onBack: () -> Unit) {
             UpdateBanner(Modifier.padding(16.dp, 8.dp))
 
             Section("Widgets")
-            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { pin { requestPinGlanceAppWidget(TopWidgetReceiver::class.java) } }) { Text("Principal do dia") }
                 OutlinedButton(onClick = { pin { requestPinGlanceAppWidget(CompactWidgetReceiver::class.java) } }) { Text("Compacto 4×1") }
+                OutlinedButton(onClick = { pin { requestPinGlanceAppWidget(RegionWidgetReceiver::class.java) } }) { Text("Por região") }
             }
+            Text(
+                "O widget por região começa em Israel. Para trocar, segure o widget na tela inicial e escolha \"Configurar\" (ou adicione pela lista de widgets, que já pergunta a região).",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(16.dp, 4.dp),
+            )
             widgetMsg?.let { Text(it, color = Red, modifier = Modifier.padding(16.dp, 8.dp)) }
         }
     }

@@ -154,6 +154,13 @@ class Repository(context: Context) {
         }
     }
 
+    fun shouldShowWhatsNew() = storage.prefs.getString("whats_new_dismissed", null) != WHATS_NEW_ID
+
+    /** "Não mostrar de novo até a próxima atualização". */
+    fun dismissWhatsNew() {
+        storage.prefs.edit().putString("whats_new_dismissed", WHATS_NEW_ID).apply()
+    }
+
     fun isSaved(id: String) = _saved.value.any { it.id == id }
 
     /** Salva (sem prazo de validade) ou remove dos salvos. */

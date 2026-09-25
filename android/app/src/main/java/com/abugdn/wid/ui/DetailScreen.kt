@@ -29,12 +29,10 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.remember
-import com.abugdn.wid.data.CONTEXT_DISCLAIMER
 import com.abugdn.wid.data.ORIGIN_LABELS
 import com.abugdn.wid.data.REGION_CONTEXT
 import com.abugdn.wid.data.TAG_LABELS
@@ -220,31 +218,19 @@ private fun ContextChips(cluster: Cluster) {
     val actors = remember(cluster.id) { cluster.actors(translator::cached) }
     val regions = cluster.tags.filter { it in REGION_CONTEXT }
     if (actors.isEmpty() && regions.isEmpty()) return
-    var open by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var openActor by remember { mutableStateOf<com.abugdn.wid.data.Actor?>(null) }
+    var openRegion by remember { mutableStateOf<String?>(null) }
 
     FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         actors.forEach { a ->
-            AssistChip(onClick = { open = a.name to a.text }, label = { Text("ⓘ ${a.name}") })
+            AssistChip(onClick = { openActor = a }, label = { Text("ⓘ ${a.name}") })
         }
         regions.forEach { tag ->
-            val label = TAG_LABELS[tag] ?: tag
-            AssistChip(onClick = { open = label to REGION_CONTEXT.getValue(tag) }, label = { Text("ⓘ $label") })
+            AssistChip(onClick = { openRegion = tag }, label = { Text("ⓘ ${TAG_LABELS[tag] ?: tag}") })
         }
     }
-    open?.let { (title, text) ->
-        AlertDialog(
-            onDismissRequest = { open = null },
-            confirmButton = { TextButton(onClick = { open = null }) { Text("Fechar") } },
-            title = { Text(title) },
-            text = {
-                Column {
-                    Text(text)
-                    Spacer(Modifier.height(12.dp))
-                    Text(CONTEXT_DISCLAIMER, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            },
-        )
-    }
+    openActor?.let { a -> ContextDialog(a.name, a.text, null) { openActor = null } }
+    openRegion?.let { tag -> RegionContextDialog(tag) { openRegion = null } }
 }
 
 /** "Como cada lado noticiou": títulos agrupados pela origem do veículo. */

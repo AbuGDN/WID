@@ -55,6 +55,7 @@ data class StatsDay(val date: String, val total: Int = 0, val counts: Map<String
 val ORIGIN_LABELS = linkedMapOf(
     "israel" to "Imprensa israelense",
     "arabe" to "Imprensa árabe",
+    "eua" to "Imprensa americana",
     "internacional" to "Internacional",
     "brasil" to "Imprensa brasileira",
 )
@@ -95,6 +96,7 @@ val TAG_LABELS = linkedMapOf(
     "iemen" to "Iêmen",
     "siria" to "Síria",
     "iraque" to "Iraque",
+    "eua" to "EUA",
     "ucrania_russia" to "Ucrânia/Rússia",
     "sudao" to "Sudão",
     "asia" to "Ásia",

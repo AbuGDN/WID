@@ -93,14 +93,87 @@ val REGION_CONTEXT = mapOf(
     "ucrania_russia" to "A Rússia anexou a Crimeia em 2014 e apoiou separatistas no Donbas; em fevereiro de 2022 lançou uma invasão em " +
         "larga escala da Ucrânia. Os combates se concentram no leste e no sul, com uso intenso de drones, mísseis e artilharia. " +
         "A Ucrânia recebe armas e ajuda de países ocidentais.",
+    "eua" to "Principal aliado militar de Israel, a quem envia cerca de US$ 3,8 bilhões por ano em ajuda militar, além de " +
+        "armas e defesa antimísseis em tempos de guerra. Mantém bases no Golfo (Catar, Bahrein, Emirados, Kuwait), porta-aviões " +
+        "na região e o Comando Central (CENTCOM), que coordena as operações no Oriente Médio. Liderou as guerras no Afeganistão e " +
+        "no Iraque, a coalizão contra o Estado Islâmico, ataques aos Houthis e, em junho de 2025, bombardeou instalações nucleares " +
+        "do Irã. Também é um dos maiores fornecedores de armas à Ucrânia.",
     "sudao" to "Em guerra desde abril de 2023 entre o exército (SAF) e as Forças de Apoio Rápido (RSF), paramilitares. O conflito, " +
         "centrado em Cartum e Darfur, gerou uma das maiores crises de deslocados do mundo e denúncias de atrocidades étnicas.",
 )
 
-/** Atores citados na notícia (título, resumo e tradução). */
+/** Glossário de armas e sistemas que aparecem com frequência. */
+val GLOSSARY = listOf(
+    Actor(
+        "domo", "Domo de Ferro", listOf("domo de ferro", "cúpula de ferro", "iron dome"),
+        "Sistema israelense de defesa contra foguetes e projéteis de curto alcance (4 a 70 km), em operação desde 2011. Calcula a " +
+            "trajetória e só dispara interceptadores contra o que vai cair em área habitada. É a primeira camada da defesa aérea de Israel.",
+    ),
+    Actor(
+        "funda", "Funda de Davi", listOf("funda de davi", "david's sling", "davids sling"),
+        "Camada intermediária da defesa aérea israelense, feita com os EUA, para foguetes pesados, mísseis de cruzeiro e " +
+            "mísseis balísticos de médio alcance (até cerca de 300 km).",
+    ),
+    Actor(
+        "arrow", "Arrow (Hetz)", listOf("arrow 2", "arrow 3", "arrow-2", "arrow-3", "sistema arrow", "arrow system"),
+        "Camada superior da defesa israelense contra mísseis balísticos de longo alcance, como os lançados pelo Irã e pelos " +
+            "Houthis. O Arrow 3 intercepta fora da atmosfera.",
+    ),
+    Actor(
+        "thaad", "THAAD", listOf("thaad"),
+        "Sistema americano de defesa contra mísseis balísticos na fase final do voo, dentro e logo acima da atmosfera. Os EUA " +
+            "instalaram uma bateria em Israel em 2024 para reforçar a defesa contra o Irã.",
+    ),
+    Actor(
+        "patriot", "Patriot", listOf("patriot"),
+        "Sistema americano de defesa aérea contra aviões, mísseis de cruzeiro e balísticos. É usado pela Ucrânia contra mísseis " +
+            "russos, inclusive os hipersônicos Kinzhal, e por vários países do Golfo e da Europa.",
+    ),
+    Actor(
+        "shahed", "Drones Shahed", listOf("shahed", "geran"),
+        "Drones de ataque iranianos de baixo custo, que voam até o alvo e explodem ("drones kamikaze"). A Rússia os usa em " +
+            "massa contra a Ucrânia (fabricados localmente como Geran-2), e o Irã e os Houthis contra Israel e navios.",
+    ),
+    Actor(
+        "himars", "HIMARS", listOf("himars"),
+        "Lançador de foguetes americano montado em caminhão, com alcance de cerca de 80 km (ou 300 km com mísseis ATACMS). " +
+            "Ficou conhecido pelo uso ucraniano contra depósitos e comandos russos desde 2022.",
+    ),
+    Actor(
+        "atacms", "ATACMS", listOf("atacms"),
+        "Míssil balístico tático americano, com alcance de até cerca de 300 km, lançado por HIMARS. O uso ucraniano contra o " +
+            "território russo foi autorizado pelos EUA no fim de 2024.",
+    ),
+    Actor(
+        "storm", "Storm Shadow / SCALP", listOf("storm shadow", "scalp"),
+        "Míssil de cruzeiro anglo-francês lançado de aviões, com alcance de mais de 250 km, fornecido à Ucrânia.",
+    ),
+    Actor(
+        "kinzhal", "Kinzhal", listOf("kinzhal"),
+        "Míssil balístico russo lançado de aviões, divulgado pela Rússia como hipersônico (muito acima de 5 vezes a velocidade do " +
+            "som). Usado contra alvos na Ucrânia.",
+    ),
+    Actor(
+        "tomahawk", "Tomahawk", listOf("tomahawk"),
+        "Míssil de cruzeiro americano de longo alcance (mais de 1.500 km), lançado de navios e submarinos. Usado contra alvos " +
+            "na Síria, no Iêmen e em outros conflitos.",
+    ),
+    Actor(
+        "gbu57", "Bomba antibunker GBU-57", listOf("gbu-57", "bunker buster", "bunker-buster", "antibunker", "destruidora de bunkers"),
+        "Bomba americana de cerca de 13,6 toneladas feita para destruir alvos subterrâneos fortificados. Só o bombardeiro B-2 a " +
+            "carrega. Foi usada pela primeira vez em junho de 2025 contra a instalação nuclear iraniana de Fordow.",
+    ),
+    Actor(
+        "f35", "F-35", listOf("f-35", "f35"),
+        "Caça furtivo americano de quinta geração, usado por Israel (versão F-35I "Adir") e por vários aliados. Teve papel " +
+            "central nos ataques israelenses ao Irã.",
+    ),
+)
+
+/** Atores e armas citados na notícia (título, resumo e tradução). */
 fun Cluster.actors(translated: (String) -> String): List<Actor> {
     val text = normalize("$title\n$summary\n${translated(title)}\n${translated(summary)}")
-    return ACTORS.filter { actor ->
+    return (ACTORS + GLOSSARY).filter { actor ->
         actor.terms.any { Regex("(?<![\\p{L}\\d])" + Regex.escape(normalize(it)) + "s?(?![\\p{L}\\d])").containsMatchIn(text) }
     }
 }

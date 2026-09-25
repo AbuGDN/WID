@@ -47,5 +47,26 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/compact_widget_info" />
         </receiver>
+
+        <receiver
+            android:name=".widget.RegionWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_region_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/region_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".widget.RegionWidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.WID">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>

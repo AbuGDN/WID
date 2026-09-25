@@ -1,6 +1,12 @@
 package com.abugdn.wid.ui
 
 import android.view.MotionEvent
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import com.abugdn.wid.data.REGION_CONTEXT
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -59,6 +65,7 @@ private val REGION_POINTS = mapOf(
     "ucrania_russia" to GeoPoint(49.0, 32.0),
     "sudao" to GeoPoint(15.5, 30.0),
     "otan" to GeoPoint(50.85, 4.35),
+    "eua" to GeoPoint(38.9, -77.0),
     "africa" to GeoPoint(13.0, 2.0),
     "asia" to GeoPoint(28.0, 95.0),
 )
@@ -99,6 +106,8 @@ fun MapScreen(onRegion: (String) -> Unit) {
     }
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var contextTag by remember { mutableStateOf<String?>(null) }
+    contextTag?.let { RegionContextDialog(it) { contextTag = null } }
     Scaffold(
         contentWindowInsets = NoInsets,
         topBar = { TopAppBar(title = { Text(if (tab == 0) "Mapa · últimas 48 h" else "Tendência por região", fontWeight = FontWeight.Bold) }) },
@@ -140,10 +149,18 @@ fun MapScreen(onRegion: (String) -> Unit) {
             LazyColumn(Modifier.weight(0.4f)) {
                 items(counts.entries.sortedByDescending { it.value }.toList(), key = { it.key }) { (tag, n) ->
                     Row(
-                        Modifier.fillMaxWidth().clickable { onRegion(tag) }.padding(16.dp, 12.dp),
+                        Modifier.fillMaxWidth().clickable { onRegion(tag) }.padding(start = 16.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(TAG_LABELS.getValue(tag), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                         Text(if (n == 1) "1 história" else "$n histórias", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (tag in REGION_CONTEXT) {
+                            IconButton(onClick = { contextTag = tag }) {
+                                Icon(Icons.Filled.Info, contentDescription = "Contexto de ${TAG_LABELS.getValue(tag)}")
+                            }
+                        } else {
+                            Spacer(Modifier.width(48.dp))
+                        }
                     }
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 }

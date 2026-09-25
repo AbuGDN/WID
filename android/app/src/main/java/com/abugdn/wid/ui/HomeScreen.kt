@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.TextField
@@ -64,7 +66,13 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(tag: String?, onTag: (String?) -> Unit, onOpen: (String) -> Unit, onSettings: () -> Unit) {
+fun HomeScreen(
+    tag: String?,
+    onTag: (String?) -> Unit,
+    onOpen: (String) -> Unit,
+    onSettings: () -> Unit,
+    onStory: () -> Unit,
+) {
     val context = LocalContext.current
     val repo = context.repository
     val feed by repo.feed.collectAsStateWithLifecycle()
@@ -200,6 +208,15 @@ fun HomeScreen(tag: String?, onTag: (String?) -> Unit, onOpen: (String) -> Unit,
                                 else error = "Seu launcher não aceita adicionar widget pelo app. Use a lista de widgets da tela inicial."
                             }
                         }, onDismiss = { showWidgetHint = false })
+                    }
+                }
+                if (top != null) {
+                    item {
+                        FilledTonalButton(onClick = onStory, modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("O dia em 1 minuto")
+                        }
                     }
                 }
                 top?.let { item { TopCard(it, onOpen) } }

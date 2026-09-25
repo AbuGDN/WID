@@ -13,6 +13,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.abugdn.wid.repository
 import com.abugdn.wid.widget.CompactWidget
+import com.abugdn.wid.widget.RegionWidget
 import com.abugdn.wid.widget.TopWidget
 import java.util.concurrent.TimeUnit
 
@@ -28,6 +29,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         Notifier.followed(applicationContext, repo.followUpdates(feed))
         TopWidget().updateAll(applicationContext)
         CompactWidget().updateAll(applicationContext)
+        RegionWidget().updateAll(applicationContext)
         runCatching { repo.prefetch(feed) }
         repo.updater.check().getOrNull()?.let { update ->
             if (repo.updater.shouldNotify(update)) Notifier.update(applicationContext, update)

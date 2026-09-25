@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Prévia estática mostrada na lista de widgets do launcher (Android 12+). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ISRAEL · PRINCIPAL"
+        android:textColor="#FFE53935"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:maxLines="3"
+        android:text="Israel ataca alvos do Hezbollah em Beirute após nova onda de foguetes"
+        android:textColor="#FFF2F2F2"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="G1 · 6 veículos · há 2 h"
+        android:textColor="#FF9AA0A6"
+        android:textSize="11sp" />
+</LinearLayout>
