@@ -23,6 +23,7 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -100,6 +101,9 @@ fun SettingsScreen(onBack: () -> Unit) {
                     update(reschedule = true) { st -> st.copy(digestHour = it) }
                 }
             }
+            Toggle("Resumo da semana", "Domingo, junto do resumo diário: as 5 principais dos últimos 7 dias", s.weeklyDigest) {
+                update(reschedule = true) { st -> st.copy(weeklyDigest = it) }
+            }
             Toggle(
                 "Não perturbe à noite",
                 "Sem notificações das ${s.quietStart}h às ${s.quietEnd}h (o que surgir entra no resumo)",
@@ -164,6 +168,49 @@ fun SettingsScreen(onBack: () -> Unit) {
                         )
                     }
                 }
+            }
+
+            Section("Veículos")
+            Text(
+                "Toque para alternar: normal → ★ preferido (dá o título e sobe no ranking) → oculto (some do app).",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            val sources = remember { context.repository.knownSources() }
+            FlowRow(modifier = Modifier.padding(16.dp, 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                sources.forEach { name ->
+                    val preferred = name in s.preferredSources
+                    val hidden = name in s.hiddenSources
+                    FilterChip(
+                        selected = preferred || hidden,
+                        onClick = {
+                            update { st ->
+                                when {
+                                    name in st.preferredSources -> st.copy(
+                                        preferredSources = st.preferredSources - name,
+                                        hiddenSources = st.hiddenSources + name,
+                                    )
+                                    name in st.hiddenSources -> st.copy(hiddenSources = st.hiddenSources - name)
+                                    else -> st.copy(preferredSources = st.preferredSources + name)
+                                }
+                            }
+                        },
+                        label = {
+                            Text(
+                                when {
+                                    preferred -> "★ $name"
+                                    hidden -> "✕ $name"
+                                    else -> name
+                                },
+                                textDecoration = if (hidden) TextDecoration.LineThrough else null,
+                            )
+                        },
+                    )
+                }
+            }
+            if (sources.isEmpty()) {
+                Text("Carregue as notícias primeiro.", modifier = Modifier.padding(horizontal = 16.dp))
             }
 
             Section("Aparência")

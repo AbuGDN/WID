@@ -42,7 +42,26 @@ data class ArticleRef(
     val lang: String = "en",
     val published: String,
     val image: String? = null,
+    val origin: String = "internacional",
 )
+
+/** stats/daily.json: histórias iniciadas por dia e por região. */
+@Serializable
+data class DailyStats(val days: List<StatsDay> = emptyList())
+
+@Serializable
+data class StatsDay(val date: String, val total: Int = 0, val counts: Map<String, Int> = emptyMap())
+
+val ORIGIN_LABELS = linkedMapOf(
+    "israel" to "Imprensa israelense",
+    "arabe" to "Imprensa árabe",
+    "internacional" to "Internacional",
+    "brasil" to "Imprensa brasileira",
+)
+
+/** As 5 principais dos últimos 7 dias (uma por dia, as de maior peso). */
+fun weekTop(days: List<HistoryDay>): List<HistoryDay> =
+    days.sortedByDescending { it.date }.take(7).sortedByDescending { it.top.dayScore }.take(5)
 
 /** history/AAAA-MM-DD.json: a principal de um dia. */
 @Serializable

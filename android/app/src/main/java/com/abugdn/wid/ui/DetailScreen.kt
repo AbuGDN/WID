@@ -24,7 +24,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.runtime.remember
+import com.abugdn.wid.data.CONTEXT_DISCLAIMER
+import com.abugdn.wid.data.ORIGIN_LABELS
+import com.abugdn.wid.data.REGION_CONTEXT
+import com.abugdn.wid.data.TAG_LABELS
+import com.abugdn.wid.data.actors
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,6 +84,8 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
     val repo = context.repository
     val saved by repo.saved.collectAsStateWithLifecycle()
     val isSaved = saved.any { it.id == cluster.id }
+    val followed by repo.followed.collectAsStateWithLifecycle()
+    val isFollowed = cluster.id in followed
     val translator = repo.translator
     var showOriginal by rememberSaveable { mutableStateOf(false) }
 
@@ -90,6 +106,13 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = { repo.toggleFollow(cluster) }) {
+                        Icon(
+                            Icons.Filled.Notifications,
+                            contentDescription = if (isFollowed) "Deixar de seguir" else "Seguir história",
+                            tint = if (isFollowed) Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     IconButton(onClick = { repo.toggleSaved(cluster) }) {
                         Icon(
                             Icons.Filled.Star,
@@ -122,6 +145,15 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
                 Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 Meta(cluster)
+                if (isFollowed) {
+                    Text(
+                        "Seguindo: você será avisado quando outros veículos noticiarem.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Red,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                ContextChips(cluster)
                 Spacer(Modifier.height(16.dp))
 
                 when (val state = textState) {
@@ -164,6 +196,8 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
                     Text("Abrir no site (${cluster.source})")
                 }
 
+                Perspectives(cluster)
+
                 if (cluster.articles.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))
                     Text("Linha do tempo · ${cluster.sourcesCount} veículos", style = MaterialTheme.typography.titleMedium)
@@ -171,6 +205,71 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
                     val ordered = cluster.articles.sortedBy { it.published }
                     ordered.forEachIndexed { i, a ->
                         TimelineItem(a, first = i == 0, last = i == ordered.lastIndex) { openUrl(context, a.url) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Chips "ⓘ Hamas", "ⓘ Gaza"… que abrem um cartão de contexto. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ContextChips(cluster: Cluster) {
+    val translator = LocalContext.current.repository.translator
+    val actors = remember(cluster.id) { cluster.actors(translator::cached) }
+    val regions = cluster.tags.filter { it in REGION_CONTEXT }
+    if (actors.isEmpty() && regions.isEmpty()) return
+    var open by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        actors.forEach { a ->
+            AssistChip(onClick = { open = a.name to a.text }, label = { Text("ⓘ ${a.name}") })
+        }
+        regions.forEach { tag ->
+            val label = TAG_LABELS[tag] ?: tag
+            AssistChip(onClick = { open = label to REGION_CONTEXT.getValue(tag) }, label = { Text("ⓘ $label") })
+        }
+    }
+    open?.let { (title, text) ->
+        AlertDialog(
+            onDismissRequest = { open = null },
+            confirmButton = { TextButton(onClick = { open = null }) { Text("Fechar") } },
+            title = { Text(title) },
+            text = {
+                Column {
+                    Text(text)
+                    Spacer(Modifier.height(12.dp))
+                    Text(CONTEXT_DISCLAIMER, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+        )
+    }
+}
+
+/** "Como cada lado noticiou": títulos agrupados pela origem do veículo. */
+@Composable
+private fun Perspectives(cluster: Cluster) {
+    val translator = LocalContext.current.repository.translator
+    val context = LocalContext.current
+    val groups = ORIGIN_LABELS.keys.associateWith { origin -> cluster.articles.filter { it.origin == origin } }
+        .filterValues { it.isNotEmpty() }
+    if (groups.size < 2) return
+
+    Spacer(Modifier.height(16.dp))
+    Text("Como cada lado noticiou", style = MaterialTheme.typography.titleMedium)
+    Spacer(Modifier.height(8.dp))
+    groups.forEach { (origin, articles) ->
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            Column(Modifier.padding(12.dp)) {
+                Text(ORIGIN_LABELS.getValue(origin).uppercase(), style = MaterialTheme.typography.labelSmall, color = Red, fontWeight = FontWeight.Bold)
+                articles.distinctBy { it.source }.forEach { a ->
+                    Column(Modifier.fillMaxWidth().clickable { openUrl(context, a.url) }.padding(vertical = 6.dp)) {
+                        Text(translator.display(a.title, a.lang), style = MaterialTheme.typography.bodyMedium)
+                        Text(a.source, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

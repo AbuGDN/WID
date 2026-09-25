@@ -33,8 +33,21 @@ class Repository(context: Context) {
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val _feed = MutableStateFlow(storage.loadFeed())
+    /** Feed como veio do servidor; [feed] é ele com os veículos escondidos/preferidos aplicados. */
+    private var raw: Feed? = storage.loadFeed()
+    private val _feed = MutableStateFlow(applySourcePrefs(raw, settings.value))
     val feed: StateFlow<Feed?> = _feed.asStateFlow()
+
+    init {
+        settings.onChange = { _feed.value = applySourcePrefs(raw, it) }
+    }
+
+    private val _followed = MutableStateFlow(loadFollowed())
+    /** id -> quantos veículos a história tinha na última vez que avisamos. */
+    val followed: StateFlow<Map<String, Int>> = _followed.asStateFlow()
+
+    private val _stats = MutableStateFlow<DailyStats?>(null)
+    val stats: StateFlow<DailyStats?> = _stats.asStateFlow()
 
     private val _saved = MutableStateFlow(storage.loadSaved())
     val saved: StateFlow<List<Cluster>> = _saved.asStateFlow()
@@ -75,8 +88,8 @@ class Repository(context: Context) {
             translator.translateAll(texts)
             storage.saveTranslations(keep = texts)
             storage.saveFeed(raw)
-            _feed.value = feed
-            feed
+            this@Repository.raw = feed
+            applySourcePrefs(feed, settings.value).also { _feed.value = it }!!
         }
     }
 
@@ -98,6 +111,49 @@ class Repository(context: Context) {
             ?: _saved.value.firstOrNull { it.id == id }
             ?: _archive.value?.firstOrNull { it.top.id == id }?.top
 
+    /** Todos os veículos que aparecem no feed (para a tela de escolher fontes). */
+    fun knownSources(): List<String> =
+        (raw?.clusters.orEmpty().flatMap { c -> c.articles.map { it.source } + c.source } + settings.value.hiddenSources)
+            .distinct().sorted()
+
+    private fun loadFollowed(): Map<String, Int> =
+        storage.prefs.getStringSet("followed", emptySet())!!.mapNotNull { entry ->
+            val (id, count) = entry.split('|').takeIf { it.size == 2 } ?: return@mapNotNull null
+            id to (count.toIntOrNull() ?: 0)
+        }.toMap()
+
+    private fun saveFollowed(map: Map<String, Int>) {
+        storage.prefs.edit().putStringSet("followed", map.map { (id, n) -> "$id|$n" }.toSet()).apply()
+        _followed.value = map
+    }
+
+    fun toggleFollow(cluster: Cluster) {
+        val map = _followed.value
+        saveFollowed(if (cluster.id in map) map - cluster.id else map + (cluster.id to cluster.sourcesCount))
+    }
+
+    /**
+     * Histórias seguidas que ganharam veículos desde o último aviso: devolve (história, quantos novos).
+     * Histórias que saíram do feed (mais de 48 h) deixam de ser seguidas.
+     */
+    fun followUpdates(feed: Feed): List<Pair<Cluster, Int>> {
+        val map = _followed.value
+        if (map.isEmpty()) return emptyList()
+        val byId = feed.clusters.associateBy { it.id }
+        val updates = map.mapNotNull { (id, count) ->
+            byId[id]?.takeIf { it.sourcesCount > count }?.let { it to it.sourcesCount - count }
+        }
+        saveFollowed(map.filterKeys { it in byId }.mapValues { (id, n) -> byId[id]?.sourcesCount ?: n })
+        return updates
+    }
+
+    suspend fun loadStats(): Result<DailyStats> = withContext(Dispatchers.IO) {
+        runCatching {
+            json.decodeFromString<DailyStats>(get("$DATA_URL/stats/daily.json?t=${System.currentTimeMillis() / 600_000}"))
+                .also { _stats.value = it }
+        }
+    }
+
     fun isSaved(id: String) = _saved.value.any { it.id == id }
 
     /** Salva (sem prazo de validade) ou remove dos salvos. */
@@ -109,7 +165,7 @@ class Repository(context: Context) {
     }
 
     /** Principal de cada um dos últimos [days] dias (history/ no servidor). */
-    suspend fun loadArchive(days: Int = 60): Result<List<HistoryDay>> = withContext(Dispatchers.IO) {
+    suspend fun loadArchive(days: Int = 60, publish: Boolean = true): Result<List<HistoryDay>> = withContext(Dispatchers.IO) {
         runCatching {
             val index = json.decodeFromString<HistoryIndex>(get("$DATA_URL/history/index.json?t=${System.currentTimeMillis() / 600_000}"))
             val list = coroutineScope {
@@ -118,7 +174,7 @@ class Repository(context: Context) {
                 }.awaitAll().filterNotNull()
             }
             translator.translateAll(textsOf(list.map { it.top }))
-            _archive.value = list
+            if (publish) _archive.value = list
             list
         }
     }
@@ -185,4 +241,39 @@ class Repository(context: Context) {
             .filter { it.length >= 40 }
             .distinct()
     }
+}
+
+/**
+ * Aplica os veículos escondidos (somem do grupo; o grupo some se ficar vazio) e os
+ * preferidos (dão o título do grupo e sobem 30% no ranking).
+ */
+fun applySourcePrefs(feed: Feed?, s: Settings): Feed? {
+    if (feed == null || (s.hiddenSources.isEmpty() && s.preferredSources.isEmpty())) return feed
+
+    fun adjust(c: Cluster): Cluster? {
+        val articles = c.articles.filter { it.source !in s.hiddenSources }
+        if (articles.isEmpty() && c.articles.isNotEmpty()) return null
+        if (c.articles.isEmpty() && c.source in s.hiddenSources) return null
+        val sources = articles.map { it.source }.toSet().ifEmpty { setOf(c.source) }
+        val preferred = articles.firstOrNull { it.source in s.preferredSources }
+        val lead = when {
+            preferred != null && c.source !in s.preferredSources -> preferred
+            c.source in s.hiddenSources -> articles.firstOrNull { it.lang == "pt" } ?: articles.first()
+            else -> null
+        }
+        val base = if (lead == null) c else c.copy(
+            title = lead.title, summary = lead.summary, url = lead.url, source = lead.source,
+            lang = lead.lang, image = lead.image ?: c.image,
+        )
+        val boost = if (sources.any { it in s.preferredSources }) 1.3 else 1.0
+        return base.copy(
+            articles = articles, sourcesCount = sources.size,
+            score = c.score * boost, dayScore = c.dayScore * boost,
+        )
+    }
+
+    val clusters = feed.clusters.mapNotNull(::adjust).sortedByDescending { it.score }
+    val top = feed.topOfDay?.let { t -> clusters.firstOrNull { it.id == t.id } }
+        ?: clusters.maxByOrNull { it.dayScore }
+    return feed.copy(clusters = clusters, topOfDay = top)
 }

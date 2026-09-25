@@ -23,6 +23,11 @@ data class Settings(
     val watchWords: Set<String> = emptySet(),
     /** Multiplicador do tamanho do texto em todo o app. */
     val textScale: Float = 1f,
+    val weeklyDigest: Boolean = true,
+    /** Veículos escondidos do app inteiro. */
+    val hiddenSources: Set<String> = emptySet(),
+    /** Veículos preferidos: dão o título do grupo e sobem no ranking. */
+    val preferredSources: Set<String> = emptySet(),
 ) {
     fun matchesRegion(tags: List<String>) = regions.isEmpty() || tags.any { it in regions }
 
@@ -52,9 +57,16 @@ class SettingsStore(private val prefs: SharedPreferences) {
             .putString("s_theme", next.theme.name)
             .putStringSet("s_watch", next.watchWords)
             .putFloat("s_text_scale", next.textScale)
+            .putBoolean("s_weekly", next.weeklyDigest)
+            .putStringSet("s_hidden_sources", next.hiddenSources)
+            .putStringSet("s_preferred_sources", next.preferredSources)
             .apply()
         _state.value = next
+        onChange?.invoke(next)
     }
+
+    /** Avisado a cada mudança (o Repository reaplica os filtros de veículos). */
+    var onChange: ((Settings) -> Unit)? = null
 
     private fun load() = Settings(
         notifyUrgent = prefs.getBoolean("s_notify_urgent", true),
@@ -68,6 +80,9 @@ class SettingsStore(private val prefs: SharedPreferences) {
         theme = runCatching { ThemeMode.valueOf(prefs.getString("s_theme", null)!!) }.getOrDefault(ThemeMode.SYSTEM),
         watchWords = prefs.getStringSet("s_watch", emptySet())!!.toSet(),
         textScale = prefs.getFloat("s_text_scale", 1f),
+        weeklyDigest = prefs.getBoolean("s_weekly", true),
+        hiddenSources = prefs.getStringSet("s_hidden_sources", emptySet())!!.toSet(),
+        preferredSources = prefs.getStringSet("s_preferred_sources", emptySet())!!.toSet(),
     )
 }
 

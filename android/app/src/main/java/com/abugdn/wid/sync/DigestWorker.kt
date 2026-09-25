@@ -9,7 +9,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.abugdn.wid.repository
+import java.time.DayOfWeek
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -18,10 +20,16 @@ class DigestWorker(context: Context, params: WorkerParameters) : CoroutineWorker
 
     override suspend fun doWork(): Result {
         val repo = applicationContext.repository
-        if (!repo.settings.value.dailyDigest) return Result.success()
-        // Sem internet, usa o feed guardado.
-        val feed = repo.refresh().getOrNull() ?: repo.feed.value ?: return Result.success()
-        Notifier.digest(applicationContext, feed)
+        val settings = repo.settings.value
+        if (settings.dailyDigest) {
+            // Sem internet, usa o feed guardado.
+            val feed = repo.refresh().getOrNull() ?: repo.feed.value
+            if (feed != null) Notifier.digest(applicationContext, feed)
+        }
+        // Domingo: também o resumo da semana.
+        if (settings.weeklyDigest && LocalDate.now().dayOfWeek == DayOfWeek.SUNDAY) {
+            repo.loadArchive(days = 7, publish = false).getOrNull()?.let { Notifier.weekly(applicationContext, it) }
+        }
         return Result.success()
     }
 
@@ -32,7 +40,7 @@ class DigestWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         fun schedule(context: Context) {
             val settings = context.repository.settings.value
             val work = WorkManager.getInstance(context)
-            if (!settings.dailyDigest) {
+            if (!settings.dailyDigest && !settings.weeklyDigest) {
                 work.cancelUniqueWork(NAME)
                 return
             }

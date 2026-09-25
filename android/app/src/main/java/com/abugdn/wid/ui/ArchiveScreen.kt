@@ -1,6 +1,11 @@
 package com.abugdn.wid.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import com.abugdn.wid.data.weekTop
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -34,6 +39,7 @@ import kotlinx.coroutines.launch
 fun ArchiveScreen(onOpen: (String) -> Unit) {
     val repo = LocalContext.current.repository
     val archive by repo.archive.collectAsStateWithLifecycle()
+    val translator = repo.translator
     val scope = rememberCoroutineScope()
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
@@ -54,6 +60,33 @@ fun ArchiveScreen(onOpen: (String) -> Unit) {
                 if (error) item { Text("Sem conexão.", color = Red, modifier = Modifier.padding(16.dp)) }
                 if (archive.isNullOrEmpty() && !loading) {
                     item { Text("Nada no arquivo ainda. O servidor guarda um dia por vez a partir de 24/09/2026.", modifier = Modifier.padding(24.dp)) }
+                }
+                val week = weekTop(archive.orEmpty())
+                if (week.size >= 2) {
+                    item {
+                        Card(
+                            modifier = Modifier.padding(16.dp, 8.dp).fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text("RESUMO DA SEMANA", style = MaterialTheme.typography.labelMedium, color = Red, fontWeight = FontWeight.Bold)
+                                week.forEachIndexed { i, day ->
+                                    Column(Modifier.fillMaxWidth().clickable { onOpen(day.top.id) }.padding(vertical = 8.dp)) {
+                                        Text(
+                                            "${i + 1}. " + translator.display(day.top.title, day.top.lang),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium,
+                                        )
+                                        Text(
+                                            "${dayLabel(day.date)} · ${day.top.source} · ${day.top.sourcesCount} veículos",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 items(archive.orEmpty(), key = { it.date }) { day ->
                     Column {

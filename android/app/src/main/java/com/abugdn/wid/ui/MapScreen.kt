@@ -1,6 +1,19 @@
 package com.abugdn.wid.ui
 
 import android.view.MotionEvent
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -85,11 +98,19 @@ fun MapScreen(onRegion: (String) -> Unit) {
         onDispose { mapView.onPause(); mapView.onDetach() }
     }
 
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     Scaffold(
         contentWindowInsets = NoInsets,
-        topBar = { TopAppBar(title = { Text("Mapa · últimas 48 h", fontWeight = FontWeight.Bold) }) },
+        topBar = { TopAppBar(title = { Text(if (tab == 0) "Mapa · últimas 48 h" else "Tendência por região", fontWeight = FontWeight.Bold) }) },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
+            TabRow(selectedTabIndex = tab) {
+                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Mapa") })
+                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Tendência") })
+            }
+            if (tab == 1) {
+                TrendBody(onRegion)
+            } else {
             AndroidView(
                 factory = { mapView },
                 modifier = Modifier.fillMaxWidth().weight(0.6f),
@@ -126,6 +147,97 @@ fun MapScreen(onRegion: (String) -> Unit) {
                     }
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 }
+            }
+            }
+        }
+    }
+}
+
+private const val TREND_DAYS = 14
+
+/**
+ * Termômetro: histórias iniciadas por dia em cada região (últimos 14 dias), com a
+ * variação da última semana contra a anterior.
+ */
+@Composable
+private fun TrendBody(onRegion: (String) -> Unit) {
+    val repo = LocalContext.current.repository
+    val stats by repo.stats.collectAsStateWithLifecycle()
+    var failed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { failed = repo.loadStats().isFailure && stats == null }
+
+    val days = stats?.days.orEmpty().takeLast(TREND_DAYS)
+    if (days.isEmpty()) {
+        Text(
+            if (failed) "Sem conexão." else "Carregando… (o servidor começou a contar em 25/09/2026; o gráfico enche com os dias)",
+            modifier = Modifier.padding(24.dp),
+        )
+        return
+    }
+    val rows = TAG_LABELS.keys.map { tag -> tag to days.map { it.counts[tag] ?: 0 } }
+        .filter { (_, values) -> values.sum() > 0 }
+        .sortedByDescending { (_, values) -> values.takeLast(7).sum() }
+
+    LazyColumn(Modifier.fillMaxSize()) {
+        item {
+            TrendRow("Todas as regiões", days.map { it.total }, highlight = true, onClick = null)
+            Text(
+                "Histórias novas por dia, ${dayLabel(days.first().date)} a ${dayLabel(days.last().date)}. A seta compara os últimos 7 dias com os 7 anteriores.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(16.dp, 0.dp, 16.dp, 8.dp),
+            )
+            HorizontalDivider()
+        }
+        items(rows, key = { it.first }) { (tag, values) ->
+            TrendRow(TAG_LABELS.getValue(tag), values, highlight = false) { onRegion(tag) }
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+        }
+    }
+}
+
+@Composable
+private fun TrendRow(label: String, values: List<Int>, highlight: Boolean, onClick: (() -> Unit)?) {
+    val last = values.takeLast(7).sum()
+    val prev = values.dropLast(7).takeLast(7).sum()
+    val change = when {
+        prev == 0 && last == 0 -> ""
+        prev == 0 -> "novo"
+        else -> {
+            val pct = (last - prev) * 100 / prev
+            when {
+                pct > 0 -> "▲ $pct%"
+                pct < 0 -> "▼ ${-pct}%"
+                else -> "= 0%"
+            }
+        }
+    }
+    val barColor = if (highlight) Red else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        Modifier.fillMaxWidth()
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+            .padding(16.dp, 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = if (highlight) FontWeight.Bold else FontWeight.Normal)
+            Text(
+                "$last na semana" + if (change.isNotEmpty()) " · $change" else "",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (change.startsWith("▲") || change == "novo") Red else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        val max = (values.maxOrNull() ?: 0).coerceAtLeast(1)
+        Canvas(Modifier.width(140.dp).height(36.dp)) {
+            val slot = size.width / values.size
+            val barWidth = slot * 0.7f
+            values.forEachIndexed { i, v ->
+                val h = if (v == 0) 1.dp.toPx() else size.height * v / max
+                drawRect(
+                    color = barColor,
+                    topLeft = Offset(i * slot + (slot - barWidth) / 2, size.height - h),
+                    size = Size(barWidth, h),
+                )
             }
         }
     }

@@ -25,6 +25,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             return if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
         Notifier.handle(applicationContext, feed)
+        Notifier.followed(applicationContext, repo.followUpdates(feed))
         TopWidget().updateAll(applicationContext)
         CompactWidget().updateAll(applicationContext)
         runCatching { repo.prefetch(feed) }

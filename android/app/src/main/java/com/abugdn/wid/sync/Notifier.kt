@@ -16,6 +16,8 @@ import com.abugdn.wid.R
 import com.abugdn.wid.data.AppUpdate
 import com.abugdn.wid.data.Cluster
 import com.abugdn.wid.data.Feed
+import com.abugdn.wid.data.HistoryDay
+import com.abugdn.wid.data.weekTop
 import com.abugdn.wid.data.matchWatchWord
 import com.abugdn.wid.repository
 import com.abugdn.wid.ui.EXTRA_CLUSTER_ID
@@ -29,6 +31,8 @@ object Notifier {
     private const val DIGEST_ID = 8_000
     private const val CHANNEL_UPDATE = "update"
     private const val CHANNEL_WATCH = "watch"
+    private const val CHANNEL_FOLLOW = "follow"
+    private const val WEEKLY_ID = 8_002
     private const val UPDATE_ID = 8_001
     private const val TOP_MIN_INTERVAL_MS = 4 * 60 * 60 * 1000L
 
@@ -45,6 +49,9 @@ object Notifier {
         )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_WATCH, context.getString(R.string.channel_watch), NotificationManager.IMPORTANCE_HIGH)
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_FOLLOW, context.getString(R.string.channel_follow), NotificationManager.IMPORTANCE_DEFAULT)
         )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_UPDATE, context.getString(R.string.channel_update), NotificationManager.IMPORTANCE_LOW)
@@ -97,6 +104,33 @@ object Notifier {
             editor.putString("top_id", top.id).putLong("top_at", now)
         }
         editor.apply()
+    }
+
+    /** História seguida ganhou veículos. Toca mesmo fora das regiões escolhidas (o usuário pediu). */
+    fun followed(context: Context, updates: List<Pair<Cluster, Int>>) {
+        if (context.repository.settings.value.isQuiet()) return
+        updates.forEach { (c, added) ->
+            notify(context, CHANNEL_FOLLOW, "Seguindo · +$added ${if (added == 1) "veículo" else "veículos"}", c)
+        }
+    }
+
+    /** Resumo da semana: as 5 principais dos últimos 7 dias do arquivo. */
+    @SuppressLint("MissingPermission") // checado em canNotify
+    fun weekly(context: Context, days: List<HistoryDay>) {
+        if (!canNotify(context) || days.isEmpty()) return
+        val repo = context.repository
+        val best = weekTop(days)
+        val style = NotificationCompat.InboxStyle()
+        best.forEach { style.addLine("• " + repo.translator.display(it.top.title, it.top.lang)) }
+        val notification = NotificationCompat.Builder(context, CHANNEL_DIGEST)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("Resumo da semana")
+            .setContentText(repo.translator.display(best.first().top.title, best.first().top.lang))
+            .setStyle(style)
+            .setContentIntent(openIntent(context, best.first().top.id))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(WEEKLY_ID, notification)
     }
 
     /** Resumo diário: as 3 histórias de maior peso das últimas 24 h. */

@@ -7,6 +7,7 @@
     <string name="channel_top">Principal do dia</string>
     <string name="channel_digest">Resumo diário</string>
     <string name="channel_watch">Palavras vigiadas</string>
+    <string name="channel_follow">Histórias seguidas</string>
     <string name="channel_update">Atualizações do app</string>
     <string name="widget_compact_name">Manchete (compacto)</string>
     <string name="widget_compact_description">A principal do dia em uma linha</string>
