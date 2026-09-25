@@ -153,3 +153,21 @@ def test_usa_tag_and_tokens():
     assert {"usa", "whitehouse"} <= tokens("Casa Branca diz que militares americanos ficam")
     assert "usa" in tokens("Casa Branca diz que militares americanos ficam")
     assert "whitehouse" in tokens("White House says US troops stay")
+
+
+def test_top_of_day_prefers_fresh_story(tmp_path):
+    from datetime import timedelta
+
+    k = kw()
+    def story(title, n, hours_ago):
+        arts = []
+        for i in range(n):
+            t = (NOW - timedelta(hours=hours_ago, minutes=i)).strftime("%a, %d %b %Y %H:%M:%S GMT")
+            xml = f"<rss><channel><item><title>{title}</title><link>https://s{i}.com/{hash(title)}</link><pubDate>{t}</pubDate></item></channel></rss>"
+            arts += parse_feed(xml.encode(), {"name": f"S{i}", "lang": "en", "weight": 1.0}, NOW)
+        return arts
+    # Ontem: muitos veículos, mas parada há 20 h. Hoje: menos veículos, porém recente.
+    old = story("Israel strikes Hezbollah targets in Beirut overnight", 6, 20)
+    new = story("Iran proposes plan to end war with Israel", 4, 1)
+    feed = build(tmp_path, NOW, [], k, old + new, {})
+    assert feed["top_of_day"]["title"].startswith("Iran proposes")

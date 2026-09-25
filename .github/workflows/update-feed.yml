@@ -1,8 +1,12 @@
 name: Atualizar feed
 
+# O agendador do GitHub atrasa muito em repositórios pequenos (na prática rodava a cada
+# ~6 h). Por isso cada execução agendada fica ~5 h no ar coletando a cada 30 min, e o
+# cron só precisa reiniciar o ciclo: a próxima execução espera na fila e começa assim
+# que a anterior termina.
 on:
   schedule:
-    - cron: "7,37 * * * *" # a cada 30 min, fora do minuto 0 (menos fila no GitHub)
+    - cron: "7 * * * *"
   workflow_dispatch:
   push:
     branches-ignore: [gh-pages]
@@ -12,13 +16,18 @@ permissions:
   contents: write
 
 concurrency:
-  group: update-feed
+  # Um push (teste rápido) não fica preso atrás do ciclo longo.
+  group: update-feed-${{ github.event_name == 'push' && 'push' || 'loop' }}
   cancel-in-progress: false
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 330
+    env:
+      # push: uma coleta só; agendado/manual: 11 coletas, 30 min entre elas (~5 h).
+      ROUNDS: ${{ github.event_name == 'push' && '1' || '11' }}
+      INTERVAL: "1800"
     steps:
       - uses: actions/checkout@v4
 
@@ -42,19 +51,28 @@ jobs:
             mkdir site
           fi
 
-      - name: Gerar JSONs
-        working-directory: backend
-        run: python -m wid.build --out ../site
-
-      # Sempre um único commit na gh-pages: o histórico não cresce a cada 30 min,
+      # Sempre um único commit na gh-pages: o histórico não cresce a cada rodada,
       # e o push mantém o repositório "ativo" (o GitHub desliga crons parados há 60 dias).
-      - name: Publicar na gh-pages
-        working-directory: site
+      - name: Coletar e publicar
+        env:
+          PUSH_URL: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
         run: |
-          rm -rf .git
-          git init -q -b gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -q -m "feed $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
+          for round in $(seq 1 "$ROUNDS"); do
+            echo "::group::Rodada $round/$ROUNDS"
+            if (cd backend && python -m wid.build --out ../site); then
+              (
+                cd site
+                rm -rf .git
+                git init -q -b gh-pages
+                git config user.name "github-actions[bot]"
+                git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                git add -A
+                git commit -q -m "feed $(date -u +%Y-%m-%dT%H:%MZ)"
+                git push -q -f "$PUSH_URL" gh-pages
+              ) || echo "::warning::falha ao publicar na rodada $round"
+            else
+              echo "::warning::coleta falhou na rodada $round; mantendo o feed anterior"
+            fi
+            echo "::endgroup::"
+            if [ "$round" -lt "$ROUNDS" ]; then sleep "$INTERVAL"; fi
+          done

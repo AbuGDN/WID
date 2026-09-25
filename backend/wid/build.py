@@ -22,6 +22,9 @@ CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 LOCAL_TZ = ZoneInfo("America/Sao_Paulo")
 KEEP_WINDOW = timedelta(hours=48)
 TOP_WINDOW = timedelta(hours=24)
+# A principal do dia perde metade do peso a cada 12 h sem notícia nova, para uma história
+# de ontem não ficar no topo o dia inteiro só por ter tido muitos veículos.
+TOP_HALF_LIFE_H = 12.0
 URGENT_WINDOW = timedelta(hours=2)
 URGENT_MIN_SOURCES = 5
 SECONDARY_COUNT = 4
@@ -62,6 +65,11 @@ def write_json(path: Path, data) -> None:
     tmp.replace(path)
 
 
+def top_score(c: dict, now: datetime) -> float:
+    age_h = (now - parse_iso(c["updated"])).total_seconds() / 3600
+    return c["day_score"] * 0.5 ** (age_h / TOP_HALF_LIFE_H)
+
+
 def write_stats(out: Path, today, started_today: list[dict]) -> None:
     """stats/daily.json: quantas histórias começaram em cada dia, por região (últimos 30 dias)."""
     path = out / "stats" / "daily.json"
@@ -95,7 +103,7 @@ def build(out: Path, now: datetime, sources: list[dict], kw: Keywords, fetched: 
     items.sort(key=lambda c: c["score"], reverse=True)
 
     recent = [c for c in items if now - parse_iso(c["updated"]) <= TOP_WINDOW]
-    recent.sort(key=lambda c: c["day_score"], reverse=True)
+    recent.sort(key=lambda c: top_score(c, now), reverse=True)
     top = recent[0] if recent else None
 
     feed = {"version": 1, "generated_at": iso(now), "top_of_day": top, "clusters": items}
