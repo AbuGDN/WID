@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
+from .analysis import cluster_figures, cluster_framing, region_tension, update_first, update_sagas
 from .cluster import build_clusters, cluster_json, is_urgent
 from .fetch import Article, fetch_all, iso, parse_iso
 from .keywords import Keywords
@@ -70,7 +71,7 @@ def top_score(c: dict, now: datetime) -> float:
     return c["day_score"] * 0.5 ** (age_h / TOP_HALF_LIFE_H)
 
 
-def write_stats(out: Path, today, started_today: list[dict]) -> None:
+def write_stats(out: Path, today, started_today: list[dict]) -> list[dict]:
     """stats/daily.json: quantas histórias começaram em cada dia, por região (últimos 30 dias)."""
     path = out / "stats" / "daily.json"
     try:
@@ -83,7 +84,9 @@ def write_stats(out: Path, today, started_today: list[dict]) -> None:
             counts[tag] = counts.get(tag, 0) + 1
     days[today.isoformat()] = {"date": today.isoformat(), "total": len(started_today), "counts": counts}
     keep = sorted(days)[-STATS_DAYS:]
-    write_json(path, {"days": [days[d] for d in keep]})
+    ordered = [days[d] for d in keep]
+    write_json(path, {"days": ordered})
+    return ordered
 
 
 def build(out: Path, now: datetime, sources: list[dict], kw: Keywords, fetched: list[Article], status: dict) -> dict:
@@ -102,11 +105,26 @@ def build(out: Path, now: datetime, sources: list[dict], kw: Keywords, fetched: 
     ]
     items.sort(key=lambda c: c["score"], reverse=True)
 
+    for c in items:
+        if figures := cluster_figures(c):
+            c["figures"] = figures
+        if framing := cluster_framing(c):
+            c["framing"] = framing
+    update_sagas(out, items, now)
+
+    # Principal de cada dia e estatística diária (fuso de Brasília), antes do feed, porque
+    # a tensão por região compara o dia de hoje com a média dos anteriores.
+    today = now.astimezone(LOCAL_TZ).date()
+    started_today = [c for c in items if parse_iso(c["published"]).astimezone(LOCAL_TZ).date() == today]
+    stats_days = write_stats(out, today, started_today)
+    regions = region_tension(items, stats_days, today.isoformat(), now)
+    update_first(out, items, now)
+
     recent = [c for c in items if now - parse_iso(c["updated"]) <= TOP_WINDOW]
     recent.sort(key=lambda c: top_score(c, now), reverse=True)
     top = recent[0] if recent else None
 
-    feed = {"version": 1, "generated_at": iso(now), "top_of_day": top, "clusters": items}
+    feed = {"version": 1, "generated_at": iso(now), "top_of_day": top, "regions": regions, "clusters": items}
     write_json(out / "feed.json", feed)
     write_json(out / "top.json", {
         "version": 1,
@@ -118,16 +136,12 @@ def build(out: Path, now: datetime, sources: list[dict], kw: Keywords, fetched: 
         ],
     })
 
-    # Principal de cada dia (fuso de Brasília). Reescrito a cada rodada; a última do dia fica.
-    today = now.astimezone(LOCAL_TZ).date()
-    started_today = [c for c in items if parse_iso(c["published"]).astimezone(LOCAL_TZ).date() == today]
+    # Principal de cada dia. Reescrito a cada rodada; a última do dia fica.
     if started_today:
         best = max(started_today, key=lambda c: c["day_score"])
         write_json(out / "history" / f"{today.isoformat()}.json", {"date": today.isoformat(), "top": best})
     days = sorted((p.stem for p in (out / "history").glob("*.json") if p.stem != "index"), reverse=True)
     write_json(out / "history" / "index.json", {"days": days})
-
-    write_stats(out, today, started_today)
 
     write_json(out / "sources_status.json", {"generated_at": iso(now), "sources": status})
     (out / ".nojekyll").touch()
