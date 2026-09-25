@@ -8,6 +8,7 @@
     <string name="channel_digest">Resumo diário</string>
     <string name="channel_watch">Palavras vigiadas</string>
     <string name="channel_follow">Histórias seguidas</string>
+    <string name="channel_spike">Alta incomum de notícias</string>
     <string name="channel_update">Atualizações do app</string>
     <string name="widget_region_name">Principal por região</string>
     <string name="widget_region_description">A principal notícia de uma região escolhida</string>

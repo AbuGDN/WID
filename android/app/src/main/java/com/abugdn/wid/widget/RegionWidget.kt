@@ -60,7 +60,8 @@ class RegionWidget : GlanceAppWidget() {
         val top = feed?.let { topOfRegion(it.clusters, tag) }
         val label = TAG_LABELS[tag] ?: tag
         val title = top?.let { repo.translator.display(it.title, it.lang) }
-        provideContent { RegionBody(label, top, title) }
+        val tension = feed?.regions?.get(tag)?.let { "Tensão ${it.tension} · ${it.level}" + if (it.spike) " · ⚠ alta incomum" else "" }
+        provideContent { RegionBody(label, top, title, tension) }
     }
 }
 
@@ -69,7 +70,7 @@ class RegionWidgetReceiver : GlanceAppWidgetReceiver() {
 }
 
 @Composable
-private fun RegionBody(label: String, top: Cluster?, title: String?) {
+private fun RegionBody(label: String, top: Cluster?, title: String?, tension: String?) {
     val action = if (top != null) {
         actionStartActivity<MainActivity>(actionParametersOf(ActionParameters.Key<String>(EXTRA_CLUSTER_ID) to top.id))
     } else {
@@ -82,6 +83,9 @@ private fun RegionBody(label: String, top: Cluster?, title: String?) {
             label.uppercase() + " · PRINCIPAL",
             style = TextStyle(color = ColorProvider(Color(0xFFE53935)), fontWeight = FontWeight.Bold, fontSize = 11.sp),
         )
+        if (tension != null) {
+            Text(tension, style = TextStyle(color = ColorProvider(Color(0xFFFFB300)), fontSize = 10.sp), maxLines = 1)
+        }
         Spacer(GlanceModifier.height(4.dp))
         Text(
             title ?: "Nenhuma notícia de $label nas últimas 48 h",

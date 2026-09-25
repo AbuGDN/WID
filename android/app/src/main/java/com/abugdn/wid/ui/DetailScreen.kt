@@ -185,6 +185,8 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
                     )
                 }
                 ContextChips(cluster, onOpen, onRegion)
+                FiguresCard(cluster)
+                SagaCard(cluster, onOpen)
                 if (isSaved) SavedMetaSection(cluster.id)
                 Spacer(Modifier.height(16.dp))
 
@@ -245,6 +247,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
                 }
 
                 Perspectives(cluster, newIds) { profileOf = it }
+                FramingCard(cluster)
 
                 if (cluster.articles.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))

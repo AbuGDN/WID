@@ -11,6 +11,18 @@ data class ChangelogEntry(val versionCode: Long, val items: List<String>)
 
 val CHANGELOG = listOf(
     ChangelogEntry(
+        13,
+        listOf(
+            "🌡 Índice de tensão (0–100) por região: volume, palavras de escalada, urgência e cobertura comparados com o normal. Na página da região, na lista do Mapa e no widget por região.",
+            "⚠ Alerta de alta incomum: notificação quando uma região passa de 3× o ritmo normal de notícias.",
+            "📚 Sagas: histórias de dias diferentes sobre o mesmo assunto viram capítulos (\"Capítulo 3 de 5\").",
+            "🔢 Números divergentes: mortos e feridos citados por cada veículo, com alerta quando não batem.",
+            "🗣 Palavras de cada lado: como cada imprensa chama a mesma coisa (terroristas × combatentes, operação × ataque...).",
+            "🏁 Quem noticia primeiro: ranking de 30 dias no Arquivo.",
+            "📅 Contador dos conflitos: \"Dia N\" da guerra na página da região.",
+        ),
+    ),
+    ChangelogEntry(
         12,
         listOf(
             "📥 Aba Lidas: as notícias que você já abriu saem da lista principal e ficam em \"Lidas\" (tela Hoje).",

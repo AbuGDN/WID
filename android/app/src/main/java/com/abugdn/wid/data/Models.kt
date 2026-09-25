@@ -10,7 +10,70 @@ data class Feed(
     val version: Int = 1,
     @SerialName("generated_at") val generatedAt: String = "",
     @SerialName("top_of_day") val topOfDay: Cluster? = null,
+    /** Índice de tensão e alerta de anomalia por região (tag). */
+    val regions: Map<String, RegionStat> = emptyMap(),
     val clusters: List<Cluster> = emptyList(),
+)
+
+@Serializable
+data class RegionStat(
+    val tension: Int = 0,
+    val level: String = "baixa",
+    val last24: Int = 0,
+    val baseline: Double = 0.0,
+    val spike: Boolean = false,
+    @SerialName("spike_ratio") val spikeRatio: Double = 0.0,
+)
+
+/** Números de mortos/feridos citados por veículo. */
+@Serializable
+data class FigureInfo(
+    @SerialName("by_source") val bySource: Map<String, Int> = emptyMap(),
+    val divergent: Boolean = false,
+)
+
+/** Termos que cada origem usa para a mesma coisa. */
+@Serializable
+data class FramingGroup(
+    val group: String,
+    @SerialName("by_origin") val byOrigin: Map<String, List<String>> = emptyMap(),
+)
+
+@Serializable
+data class SagaRef(
+    val id: String,
+    val title: String,
+    val lang: String = "en",
+    val chapter: Int = 1,
+    val total: Int = 0,
+    val chapters: List<SagaChapter> = emptyList(),
+)
+
+@Serializable
+data class SagaChapter(
+    @SerialName("cluster_id") val clusterId: String,
+    val title: String,
+    val lang: String = "en",
+    val source: String = "",
+    val url: String = "",
+    val published: String = "",
+    @SerialName("sources_count") val sourcesCount: Int = 1,
+)
+
+/** stats/first.json: quem publicou primeiro nas histórias grandes (30 dias). */
+@Serializable
+data class FirstStats(
+    @SerialName("big_stories") val bigStories: Int = 0,
+    val ranking: List<FirstRank> = emptyList(),
+)
+
+@Serializable
+data class FirstRank(
+    val source: String,
+    val firsts: Int = 0,
+    val stories: Int = 0,
+    @SerialName("lead_min") val leadMin: Int = 0,
+    val rate: Double = 0.0,
 )
 
 @Serializable
@@ -30,6 +93,9 @@ data class Cluster(
     @SerialName("day_score") val dayScore: Double = 0.0,
     val urgent: Boolean = false,
     val articles: List<ArticleRef> = emptyList(),
+    val figures: Map<String, FigureInfo> = emptyMap(),
+    val framing: List<FramingGroup> = emptyList(),
+    val saga: SagaRef? = null,
 )
 
 @Serializable

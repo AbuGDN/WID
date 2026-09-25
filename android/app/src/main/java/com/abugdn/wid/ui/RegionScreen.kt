@@ -51,6 +51,7 @@ fun RegionScreen(tag: String, onBack: () -> Unit, onOpen: (String) -> Unit) {
     val pastTops = archive.orEmpty().filter { tag in it.top.tags && it.date >= cutoff && current.none { c -> c.id == it.top.id } }
     val trend = stats?.days.orEmpty().takeLast(14).map { it.counts[tag] ?: 0 }
 
+    val stat = feed?.regions?.get(tag)
     Scaffold(
         contentWindowInsets = NoInsets,
         topBar = {
@@ -63,6 +64,12 @@ fun RegionScreen(tag: String, onBack: () -> Unit, onOpen: (String) -> Unit) {
         },
     ) { padding ->
         LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+            item {
+                Column(Modifier.padding(16.dp, 12.dp, 16.dp, 0.dp)) {
+                    ConflictCounter(tag, Modifier.padding(bottom = 12.dp))
+                    stat?.let { TensionGauge(it) }
+                }
+            }
             REGION_CONTEXT[tag]?.let { text ->
                 item {
                     Column(Modifier.padding(16.dp)) {

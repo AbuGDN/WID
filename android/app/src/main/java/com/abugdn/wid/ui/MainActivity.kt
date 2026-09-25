@@ -46,6 +46,9 @@ const val EXTRA_CLUSTER_ID = "cluster_id"
 /** Atalhos do ícone do app (res/xml/shortcuts.xml): "story", "search" ou "saved". */
 const val EXTRA_SHORTCUT = "shortcut"
 
+/** Abre direto a página de uma região (notificação de alta incomum). */
+const val EXTRA_REGION = "region"
+
 /** As telas internas não aplicam insets do sistema: a barra de baixo é do Scaffold externo. */
 val NoInsets = WindowInsets(0, 0, 0, 0)
 
@@ -67,7 +70,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         openCluster = intent.getStringExtra(EXTRA_CLUSTER_ID)
-        shortcut = intent.getStringExtra(EXTRA_SHORTCUT)
+        shortcut = intent.getStringExtra(EXTRA_SHORTCUT) ?: intent.getStringExtra(EXTRA_REGION)?.let { "region:$it" }
         if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         if (savedInstanceState == null) SyncWorker.runNow(this)
 
@@ -102,6 +105,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         intent.getStringExtra(EXTRA_CLUSTER_ID)?.let { openCluster = it }
         intent.getStringExtra(EXTRA_SHORTCUT)?.let { openCluster = null; shortcut = it }
+        intent.getStringExtra(EXTRA_REGION)?.let { openCluster = null; shortcut = "region:$it" }
     }
 }
 
@@ -124,6 +128,12 @@ private fun App(
     var storyOpen by rememberSaveable { mutableStateOf(false) }
     var searchRequest by remember { mutableIntStateOf(0) }
     var regionOpen by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(shortcut) {
+        val request = shortcut ?: return@LaunchedEffect
+        if (!request.startsWith("region:")) return@LaunchedEffect
+        regionOpen = request.removePrefix("region:")
+        onShortcutHandled()
+    }
     // Mais de 24 h sem abrir: mostra o que a pessoa perdeu (uma vez por abertura).
     val missedSince = remember { repo.previousVisit }
     var missedOpen by rememberSaveable {

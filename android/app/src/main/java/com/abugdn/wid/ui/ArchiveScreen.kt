@@ -41,6 +41,8 @@ fun ArchiveScreen(onOpen: (String) -> Unit) {
     val repo = LocalContext.current.repository
     val archive by repo.archive.collectAsStateWithLifecycle()
     val translator = repo.translator
+    val first by repo.first.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { if (repo.first.value == null) repo.loadFirst() }
     val scope = rememberCoroutineScope()
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
@@ -63,6 +65,7 @@ fun ArchiveScreen(onOpen: (String) -> Unit) {
                     item { Text("Nada no arquivo ainda. O servidor guarda um dia por vez a partir de 24/09/2026.", modifier = Modifier.padding(24.dp)) }
                 }
                 item { YourWeekCard(onOpen) }
+                item { first?.let { FirstRankingCard(it, Modifier.padding(16.dp, 8.dp)) } }
                 val week = weekTop(archive.orEmpty())
                 if (week.size >= 2) {
                     item {

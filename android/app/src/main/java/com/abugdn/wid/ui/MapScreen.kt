@@ -185,7 +185,17 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(TAG_LABELS.getValue(tag), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                        Text(if (n == 1) "1 história" else "$n histórias", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(if (n == 1) "1 história" else "$n histórias", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            feed?.regions?.get(tag)?.let { r ->
+                                Text(
+                                    (if (r.spike) "⚠ " else "") + "tensão ${r.tension} · ${r.level}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = tensionColor(r.level),
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        }
                         if (tag in REGION_CONTEXT) {
                             IconButton(onClick = { onRegion(tag) }) {
                                 Icon(Icons.Filled.Info, contentDescription = "Contexto de ${TAG_LABELS.getValue(tag)}")

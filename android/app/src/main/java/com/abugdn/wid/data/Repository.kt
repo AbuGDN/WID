@@ -57,6 +57,16 @@ class Repository(context: Context) {
     /** id -> quantos veículos a história tinha na última vez que avisamos. */
     val followed: StateFlow<Map<String, Int>> = _followed.asStateFlow()
 
+    private val _first = MutableStateFlow<FirstStats?>(null)
+    val first: StateFlow<FirstStats?> = _first.asStateFlow()
+
+    suspend fun loadFirst(): Result<FirstStats> = withContext(Dispatchers.IO) {
+        runCatching {
+            json.decodeFromString<FirstStats>(get("$DATA_URL/stats/first.json?t=${System.currentTimeMillis() / 600_000}"))
+                .also { _first.value = it }
+        }
+    }
+
     private val _stats = MutableStateFlow<DailyStats?>(null)
     val stats: StateFlow<DailyStats?> = _stats.asStateFlow()
 
@@ -123,6 +133,7 @@ class Repository(context: Context) {
                 if (c.summary.isNotBlank()) add(c.summary)
             }
             c.articles.filter { it.lang != "pt" }.forEach { add(it.title) }
+            c.saga?.chapters?.filter { it.lang != "pt" }?.forEach { add(it.title) }
         }
     }
 

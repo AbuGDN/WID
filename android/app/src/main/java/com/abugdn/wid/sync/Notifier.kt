@@ -20,7 +20,9 @@ import com.abugdn.wid.data.HistoryDay
 import com.abugdn.wid.data.weekTop
 import com.abugdn.wid.data.matchWatchWord
 import com.abugdn.wid.repository
+import com.abugdn.wid.data.TAG_LABELS
 import com.abugdn.wid.ui.EXTRA_CLUSTER_ID
+import com.abugdn.wid.ui.EXTRA_REGION
 import com.abugdn.wid.ui.MainActivity
 import java.time.Instant
 
@@ -32,6 +34,8 @@ object Notifier {
     private const val CHANNEL_UPDATE = "update"
     private const val CHANNEL_WATCH = "watch"
     private const val CHANNEL_FOLLOW = "follow"
+    private const val CHANNEL_SPIKE = "spike"
+    private const val SPIKE_INTERVAL_MS = 12 * 60 * 60 * 1000L
     private const val WEEKLY_ID = 8_002
     private const val SUMMARY_ID = 8_003
     /** Todas as notícias ficam num grupo só na barra de notificações. */
@@ -52,6 +56,9 @@ object Notifier {
         )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_WATCH, context.getString(R.string.channel_watch), NotificationManager.IMPORTANCE_HIGH)
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_SPIKE, context.getString(R.string.channel_spike), NotificationManager.IMPORTANCE_HIGH)
         )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_FOLLOW, context.getString(R.string.channel_follow), NotificationManager.IMPORTANCE_DEFAULT)
@@ -107,6 +114,44 @@ object Notifier {
             editor.putString("top_id", top.id).putLong("top_at", now)
         }
         editor.apply()
+    }
+
+    /**
+     * Anomalia: região com ritmo de notícias muito acima do normal. No máximo um aviso
+     * por região a cada 12 h, respeitando regiões escolhidas e o não perturbe.
+     */
+    @SuppressLint("MissingPermission") // checado em canNotify
+    fun spikes(context: Context, feed: Feed) {
+        if (!canNotify(context)) return
+        val repo = context.repository
+        val settings = repo.settings.value
+        if (settings.isQuiet() || !repo.storage.prefs.getBoolean("initialized", false)) return
+        val prefs = repo.storage.prefs
+        val now = System.currentTimeMillis()
+        feed.regions.filter { (tag, r) -> r.spike && settings.matchesRegion(listOf(tag)) }.forEach { (tag, r) ->
+            val key = "spike_at_$tag"
+            if (now - prefs.getLong(key, 0) < SPIKE_INTERVAL_MS) return@forEach
+            prefs.edit().putLong(key, now).apply()
+            val label = TAG_LABELS[tag] ?: tag
+            val intent = Intent(context, MainActivity::class.java)
+                .putExtra(EXTRA_REGION, tag)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            val pending = PendingIntent.getActivity(
+                context, ("spike" + tag).hashCode(), intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            val text = "Ritmo de notícias ${"%.1f".format(r.spikeRatio)}× o normal nas últimas 6 h · tensão ${r.tension} (${r.level})"
+            val notification = NotificationCompat.Builder(context, CHANNEL_SPIKE)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("⚠ Alta incomum: $label")
+                .setContentText(text)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(pending)
+                .setGroup(GROUP)
+                .setAutoCancel(true)
+                .build()
+            NotificationManagerCompat.from(context).notify(("spike" + tag).hashCode(), notification)
+        }
     }
 
     /** História seguida ganhou veículos. Toca mesmo fora das regiões escolhidas (o usuário pediu). */
