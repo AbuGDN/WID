@@ -2,7 +2,7 @@
 # uma fica em sources_status.json no site publicado, para podar as quebradas.
 #
 # url: uma URL ou uma lista de alternativas (tentadas em ordem)
-# origin: israel | arabe | internacional | brasil (usado em "como cada lado noticiou")
+# origin: israel | arabe | eua | internacional | brasil (usado em "como cada lado noticiou")
 # weight: peso na escolha do título de um grupo e no ranking (1.0 = normal)
 
 sources:
@@ -28,10 +28,17 @@ sources:
   - {name: BBC Middle East, url: "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml", lang: en, origin: internacional, weight: 1.2}
   - {name: BBC World, url: "https://feeds.bbci.co.uk/news/world/rss.xml", lang: en, origin: internacional, weight: 1.1}
   - {name: The Guardian, url: "https://www.theguardian.com/world/rss", lang: en, origin: internacional, weight: 1.1}
-  - {name: NYT World, url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", lang: en, origin: internacional, weight: 1.1}
   - {name: DW, url: "https://rss.dw.com/rdf/rss-en-world", lang: en, origin: internacional, weight: 1.0}
   - {name: France 24, url: "https://www.france24.com/en/rss", lang: en, origin: internacional, weight: 1.0}
   - {name: Kyiv Independent, url: ["https://kyivindependent.com/feed/", "https://kyivindependent.com/news-archive/rss/"], lang: en, origin: internacional, weight: 0.9}
+
+  # --- Estados Unidos ---
+  - {name: NYT World, url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", lang: en, origin: eua, weight: 1.1}
+  - {name: NPR, url: "https://feeds.npr.org/1004/rss.xml", lang: en, origin: eua, weight: 1.1}
+  - {name: CNN, url: ["https://rss.cnn.com/rss/edition_world.rss", "http://rss.cnn.com/rss/edition_world.rss"], lang: en, origin: eua, weight: 1.0}
+  - {name: Fox News, url: "https://moxie.foxnews.com/google-publisher/world.xml", lang: en, origin: eua, weight: 1.0}
+  - {name: Washington Post, url: "https://feeds.washingtonpost.com/rss/world", lang: en, origin: eua, weight: 1.1}
+  - {name: Defense News, url: "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml", lang: en, origin: eua, weight: 0.9}
 
   # --- Em português ---
   - {name: G1, url: "https://g1.globo.com/rss/g1/mundo/", lang: pt, origin: brasil, weight: 1.1}

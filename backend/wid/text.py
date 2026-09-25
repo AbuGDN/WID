@@ -45,7 +45,8 @@ CANON = {
     "embaixador": "ambassador", "ferido": "hurt", "wounded": "hurt", "injured": "hurt",
     "presidente": "president", "primeiro": "prime", "ministro": "minister",
     "civi": "civilian", "civil": "civilian", "paquistao": "pakistan", "afeganistao": "afghanistan",
-    "discurso": "speech", "onu": "un",
+    "discurso": "speech", "onu": "un", "americano": "usa", "americana": "usa", "american": "usa",
+    "pentagono": "pentagon",
 }
 
 # Expressões de várias palavras viram um token só antes da tokenização.
@@ -53,6 +54,7 @@ PHRASES = [
     (re.compile(r"\bwest bank\b"), "westbank"),
     (re.compile(r"\bestados unidos\b|\bu\.s\.(?=\W|$)|\bu\.s\b"), "usa"),
     (re.compile(r"\bunited states\b"), "usa"),
+    (re.compile(r"\bcasa branca\b|\bwhite house\b"), "whitehouse"),
     (re.compile(r"\bnações unidas\b|\bunited nations\b"), "un"),
     (re.compile(r"\bfaixa de gaza\b|\bgaza strip\b"), "gaza"),
 ]

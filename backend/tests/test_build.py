@@ -141,3 +141,15 @@ def test_origin_and_daily_stats(tmp_path):
     # Uma segunda rodada no mesmo dia sobrescreve o dia, não duplica.
     build(tmp_path, NOW, SOURCES, kw(), [], {})
     assert len(json.loads((tmp_path / "stats" / "daily.json").read_text())["days"]) == 1
+
+
+def test_usa_tag_and_tokens():
+    from wid.text import tokens
+
+    m = kw().match("Pentagon sends second carrier to the Middle East after Houthi missile attack", "")
+    assert m.relevant and {"eua", "iemen"} <= m.tags
+    # Política interna sem termo de guerra fica de fora.
+    assert not kw().match("Trump signs executive order on tariffs", "").relevant
+    assert {"usa", "whitehouse"} <= tokens("Casa Branca diz que militares americanos ficam")
+    assert "usa" in tokens("Casa Branca diz que militares americanos ficam")
+    assert "whitehouse" in tokens("White House says US troops stay")
