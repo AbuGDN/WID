@@ -11,6 +11,17 @@ data class ChangelogEntry(val versionCode: Long, val items: List<String>)
 
 val CHANGELOG = listOf(
     ChangelogEntry(
+        16,
+        listOf(
+            "🤝 Selo \"lados opostos\": quando a imprensa árabe e a israelense (ou americana) contam a mesma história. E ⚠ \"só um lado\" quando uma história grande saiu só de um lado.",
+            "🇮🇱🇸🇦 Imprensa local no idioma original: Ynet, Walla, Maariv e Haaretz em hebraico; Al Jazeera, Al Arabiya e Asharq Al-Awsat em árabe, traduzidos no aparelho.",
+            "🎯 Alcance de mísseis no Mapa: Irã, houthis, Hezbollah, Hamas, ATACMS e Iskander em vermelho; Domo de Ferro e THAAD em ouro. Toque na legenda para ir até o círculo.",
+            "📜 Registro de vigília (no Arquivo): todo alerta urgente, alta incomum, número divergente e tensão crítica fica guardado com data e hora.",
+            "🗞 Boletim semanal: todo domingo, uma imagem preta e dourada com as 5 da semana, a região mais tensa, o maior pico de alerta e quem noticiou primeiro. Pronta para compartilhar.",
+            "ℹ Na 1ª vez que aparecer uma notícia em hebraico ou árabe, o app baixa o tradutor daquele idioma (~30 MB cada).",
+        ),
+    ),
+    ChangelogEntry(
         15,
         listOf(
             "👁 O WID agora é ARGOS: o gigante de cem olhos que nunca dormia. Nenhuma guerra escapa.",

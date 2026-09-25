@@ -96,6 +96,8 @@ data class Cluster(
     val figures: Map<String, FigureInfo> = emptyMap(),
     val framing: List<FramingGroup> = emptyList(),
     val saga: SagaRef? = null,
+    /** "opostos" (imprensa árabe e israelense/americana contam a mesma coisa) ou "um_lado". */
+    val sides: String? = null,
 )
 
 @Serializable

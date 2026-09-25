@@ -47,16 +47,21 @@ suspend fun shareAsImage(context: Context, cluster: Cluster) {
     } else {
         null
     }
-    val file = withContext(Dispatchers.Default) {
-        val bitmap = drawCard(cluster, title, photo)
+    val bitmap = withContext(Dispatchers.Default) { drawCard(cluster, title, photo) }
+    shareBitmap(context, bitmap, "wid-${cluster.id}", "$title\n${cluster.url}")
+}
+
+/** Salva a imagem no cache e abre o compartilhar do Android. */
+suspend fun shareBitmap(context: Context, bitmap: Bitmap, name: String, text: String) {
+    val file = withContext(Dispatchers.IO) {
         val dir = File(context.cacheDir, "share").apply { mkdirs() }
-        File(dir, "wid-${cluster.id}.png").also { f -> f.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+        File(dir, "$name.png").also { f -> f.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } }
     }
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
     val send = Intent(Intent.ACTION_SEND)
         .setType("image/png")
         .putExtra(Intent.EXTRA_STREAM, uri)
-        .putExtra(Intent.EXTRA_TEXT, "$title\n${cluster.url}")
+        .putExtra(Intent.EXTRA_TEXT, text)
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     send.clipData = ClipData.newRawUri(null, uri)
     context.startActivity(Intent.createChooser(send, "Compartilhar imagem"))

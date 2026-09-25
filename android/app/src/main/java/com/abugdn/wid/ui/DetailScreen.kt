@@ -185,6 +185,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
                     )
                 }
                 ContextChips(cluster, onOpen, onRegion)
+                SidesCard(cluster)
                 FiguresCard(cluster)
                 SagaCard(cluster, onOpen)
                 if (isSaved) SavedMetaSection(cluster.id)

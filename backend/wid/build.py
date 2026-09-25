@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
-from .analysis import cluster_figures, cluster_framing, region_tension, update_first, update_sagas
+from .analysis import cluster_figures, cluster_framing, cluster_sides, region_tension, update_first, update_sagas
 from .cluster import build_clusters, cluster_json, is_urgent
 from .fetch import Article, fetch_all, iso, parse_iso
 from .keywords import Keywords
@@ -110,6 +110,8 @@ def build(out: Path, now: datetime, sources: list[dict], kw: Keywords, fetched: 
             c["figures"] = figures
         if framing := cluster_framing(c):
             c["framing"] = framing
+        if sides := cluster_sides(c):
+            c["sides"] = sides
     update_sagas(out, items, now)
 
     # Principal de cada dia e estatística diária (fuso de Brasília), antes do feed, porque

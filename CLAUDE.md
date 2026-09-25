@@ -35,13 +35,15 @@ que publica JSON na branch `gh-pages`; app Kotlin/Compose que lê esse JSON.
 
 ```
 backend/                 Python 3.11 (feedparser, httpx, PyYAML). Rodar: python -m wid.build --out ../site
-  config/sources.yaml    ~26 veículos: url (ou lista de alternativas), lang pt|en, origin, weight
+  config/sources.yaml    ~33 veículos: url (ou lista de alternativas), lang pt|en|he|ar, origin, weight
   config/keywords.yaml   termos de guerra, tags de região, boost, termos de urgência
   wid/fetch.py           download/parse RSS, canonical_url, limpeza de resumos, Google News
-  wid/text.py            tokens() com dicionário PT→EN (CANON/PHRASES) para agrupar entre idiomas
+  wid/text.py            tokens() com dicionário PT→EN (CANON/PHRASES) e hebraico/árabe→EN (CANON_RTL,
+                         prefixos colados, normalize_rtl) para agrupar entre idiomas
   wid/keywords.py        Match: relevante se ≥1 termo de guerra e (região ou ≥2 termos)
   wid/cluster.py         agrupamento guloso por sobreposição de tokens (janela 18 h), scores, lead()
-  wid/analysis.py        figuras (mortos/feridos), enquadramento, tensão/anomalia, sagas, first.json
+  wid/analysis.py        figuras (mortos/feridos), enquadramento, lados ("opostos"/"um_lado"),
+                         tensão/anomalia, sagas, first.json
   wid/build.py           orquestra; escreve feed.json, top.json, history/, stats/, sagas.json
   tests/                 pytest com fixtures; rode sempre antes do push
 android/app/src/main/java/com/abugdn/wid/
@@ -53,6 +55,9 @@ android/app/src/main/java/com/abugdn/wid/
   data/Updater.kt        consulta Releases do GitHub, baixa APK via DownloadManager
   data/Context.kt        textos fixos: ACTORS, PEOPLE, GLOSSARY, REGION_CONTEXT, SOURCE_PROFILES
   data/Milestones.kt, Conflicts.kt, WhatsNew.kt (CHANGELOG por versionCode)
+  data/Translator.kt     ML Kit en/he/ar→pt; idioma detectado pelo alfabeto; um modelo por idioma
+  data/Vigil.kt          registro de vigília (alertas com data/hora, vigil.json); Bulletin.kt: boletim semanal
+  data/Ranges.kt         alcance de mísseis/defesas desenhado no mapa
   sync/                  SyncWorker (30 min), DigestWorker, Notifier, NotificationActionReceiver
   ui/                    Compose; MainActivity faz a navegação por estado (sem navigation-compose)
   widget/                Glance: TopWidget, CompactWidget, RegionWidget (+ tela de configuração)

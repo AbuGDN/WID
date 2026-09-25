@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 
 const val EXTRA_CLUSTER_ID = "cluster_id"
 
-/** Atalhos do ícone do app (res/xml/shortcuts.xml): "story", "search" ou "saved". */
+/** Atalhos do ícone do app (res/xml/shortcuts.xml) e de notificações: "story", "search", "saved", "bulletin", "vigil". */
 const val EXTRA_SHORTCUT = "shortcut"
 
 /** Abre direto a página de uma região (notificação de alta incomum). */
@@ -128,6 +128,8 @@ private fun App(
     var storyOpen by rememberSaveable { mutableStateOf(false) }
     var searchRequest by remember { mutableIntStateOf(0) }
     var regionOpen by rememberSaveable { mutableStateOf<String?>(null) }
+    var vigilOpen by rememberSaveable { mutableStateOf(false) }
+    var bulletinOpen by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(shortcut) {
         val request = shortcut ?: return@LaunchedEffect
         if (!request.startsWith("region:")) return@LaunchedEffect
@@ -144,6 +146,8 @@ private fun App(
             "story" -> storyOpen = true
             "search" -> { settingsOpen = false; tab = Tab.HOME; searchRequest++ }
             "saved" -> { settingsOpen = false; tab = Tab.SAVED }
+            "bulletin" -> { settingsOpen = false; bulletinOpen = true }
+            "vigil" -> { settingsOpen = false; vigilOpen = true }
             else -> return@LaunchedEffect
         }
         onShortcutHandled()
@@ -162,7 +166,8 @@ private fun App(
 
     Scaffold(
         bottomBar = {
-            if (openCluster == null && !settingsOpen && !storyOpen && regionOpen == null && !missedOpen) {
+            val overlay = settingsOpen || storyOpen || regionOpen != null || missedOpen || vigilOpen || bulletinOpen
+            if (openCluster == null && !overlay) {
                 NavigationBar {
                     Tab.entries.forEach { t ->
                         NavigationBarItem(
@@ -200,6 +205,14 @@ private fun App(
                     BackHandler { regionOpen = null }
                     RegionScreen(tag = regionOpen!!, onBack = { regionOpen = null }, onOpen = { onOpenCluster(it) })
                 }
+                vigilOpen -> {
+                    BackHandler { vigilOpen = false }
+                    VigilScreen(onBack = { vigilOpen = false }, onOpen = { onOpenCluster(it) }, onRegion = { regionOpen = it })
+                }
+                bulletinOpen -> {
+                    BackHandler { bulletinOpen = false }
+                    BulletinScreen(onBack = { bulletinOpen = false })
+                }
                 storyOpen -> {
                     BackHandler { storyOpen = false }
                     StoryScreen(onClose = { storyOpen = false }, onOpen = { storyOpen = false; onOpenCluster(it) })
@@ -221,7 +234,11 @@ private fun App(
                             onRegion = { regionOpen = it },
                         )
                         Tab.MAP -> MapScreen(onRegion = { regionOpen = it }, onOpen = { onOpenCluster(it) })
-                        Tab.ARCHIVE -> ArchiveScreen(onOpen = { onOpenCluster(it) })
+                        Tab.ARCHIVE -> ArchiveScreen(
+                            onOpen = { onOpenCluster(it) },
+                            onVigil = { vigilOpen = true },
+                            onBulletin = { bulletinOpen = true },
+                        )
                         Tab.SAVED -> SavedScreen(onOpen = { onOpenCluster(it) })
                     }
                 }

@@ -145,6 +145,47 @@ fun FiguresCard(cluster: Cluster) {
     }
 }
 
+/** Selo curto para a lista de notícias. */
+fun sidesBadge(c: Cluster): String? = when (c.sides) {
+    "opostos" -> "🤝 LADOS OPOSTOS"
+    "um_lado" -> "⚠ SÓ UM LADO"
+    else -> null
+}
+
+/** Confirmação cruzada: lados rivais contando a mesma história, ou só um deles. */
+@Composable
+fun SidesCard(cluster: Cluster) {
+    val side = cluster.sides ?: return
+    val byOrigin = cluster.articles.groupBy { it.origin }.mapValues { (_, arts) -> arts.map { it.source }.distinct() }
+    InsightCard {
+        if (side == "opostos") {
+            CardTitle("🤝 CONFIRMADO POR LADOS OPOSTOS")
+            Text(
+                "Veículos de lados rivais contam esta história. Fatos que os dois lados relatam costumam ser mais sólidos; a interpretação ainda pode mudar.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            listOf("israel", "eua", "arabe").forEach { origin ->
+                val sources = byOrigin[origin] ?: return@forEach
+                Text(
+                    "${ORIGIN_LABELS[origin] ?: origin}: ${sources.joinToString(", ")}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        } else {
+            val origin = byOrigin.keys.firstOrNull()
+            CardTitle("⚠ SÓ UM LADO NOTICIOU", Alert)
+            Text(
+                "Até agora só a ${(ORIGIN_LABELS[origin] ?: "mesma origem").lowercase()} publicou esta história " +
+                    "(${byOrigin[origin].orEmpty().joinToString(", ")}). Vale esperar confirmação de outras fontes.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+    }
+}
+
 /** Palavras que cada origem usou para a mesma coisa. */
 @Composable
 fun FramingCard(cluster: Cluster) {

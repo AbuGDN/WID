@@ -88,20 +88,59 @@ war_terms:
   - nuclear weapon*
   - casualties
   - killed in
+  # hebraico (aspas de siglas são removidas: צה"ל -> צהל) e árabe (sem hamza: إ -> ا)
+  - מלחמה*
+  - תקיפ*
+  - מתקפ*
+  - טילים
+  - רקט*
+  - כטבם
+  - רחפן*
+  - יירוט*
+  - פיגוע*
+  - חטופים
+  - הרוגים
+  - פצועים
+  - חיילים
+  - צבא*
+  - הפסקת אש
+  - حرب*
+  - هجوم*
+  - غارة*
+  - غارات
+  - قصف*
+  - صاروخ*
+  - صواريخ
+  - مسيرة*
+  - مسيرات
+  - طائرات مسيرة
+  - وقف اطلاق النار
+  - رهائن
+  - اسرى
+  - جيش*
+  - شهداء
+  - شهيد*
+  - قتلى
+  - قتيل*
+  - جرحى
+  - اشتباكات
+  - عملية عسكرية
+  - توغل*
+  - اجتياح*
 
 # Tag -> termos. A tag aparece no app como filtro. As tags em `boost` pesam mais
 # no ranking.
 tags:
-  israel: [israel*, idf, fdi, netanyahu, tel aviv, jerusalém, jerusalem, knesset, mossad]
-  gaza: [gaza, hamas, rafah, khan yunis, khan younis, jihad islâmica, islamic jihad]
-  cisjordania: [cisjordânia, west bank, jenin, nablus, ramallah, colonos, settler*]
-  libano: [líbano, lebanon, lebanese, libanês, libanes*, hezbol*, hizbol*, hizbul*, hezbollah, beirute, beirut]
-  ira: [irã, iran*, teerã, tehran, khamenei, guarda revolucionária, revolutionary guard*, irgc]
-  iemen: [iêmen, yemen*, houthi*, huthi*, mar vermelho, red sea]
-  siria: [síria, sírio*, syria*, damasco, damascus, assad]
-  iraque: [iraque, iraqi*, iraq, bagdá, baghdad]
-  ucrania_russia: [ucrânia, ucranian*, ukrain*, kiev, kyiv, zelensky*, rússia, russo*, russa*, russia*, putin, kremlin, donbas*, crimeia, crimea]
-  sudao: [sudão, sudan*, darfur, cartum, khartoum]
+  israel: [israel*, idf, fdi, netanyahu, tel aviv, jerusalém, jerusalem, knesset, mossad, ישראל*, צהל, נתניהו, תל אביב, ירושלים, כנסת, اسرائيل*, الاحتلال, نتنياهو, تل ابيب, القدس]
+  gaza: [gaza, hamas, rafah, khan yunis, khan younis, jihad islâmica, islamic jihad, עזה, חמאס, רפיח, חאן יונס, ג'יהאד, غزة, حماس, رفح, خان يونس, القسام, الجهاد الاسلامي]
+  cisjordania: [cisjordânia, west bank, jenin, nablus, ramallah, colonos, settler*, יהודה ושומרון, הגדה המערבית, ג'נין, שכם, רמאללה, מתנחל*, الضفة الغربية, جنين, نابلس, رام الله, مستوطن*]
+  libano: [líbano, lebanon, lebanese, libanês, libanes*, hezbol*, hizbol*, hizbul*, hezbollah, beirute, beirut, לבנון, חיזבאללה, ביירות, لبنان, حزب الله, بيروت]
+  ira: [irã, iran*, teerã, tehran, khamenei, guarda revolucionária, revolutionary guard*, irgc, איראן, טהרן, חמינאי, משמרות המהפכה, ايران*, طهران, خامنئي, الحرس الثوري]
+  iemen: [iêmen, yemen*, houthi*, huthi*, mar vermelho, red sea, תימן, חותים, חות'ים, اليمن*, الحوثي*, صنعاء, البحر الاحمر]
+  siria: [síria, sírio*, syria*, damasco, damascus, assad, סוריה, דמשק, سوريا, دمشق]
+  iraque: [iraque, iraqi*, iraq, bagdá, baghdad, עיראק, بغداد, العراق*]
+  ucrania_russia: [ucrânia, ucranian*, ukrain*, kiev, kyiv, zelensky*, rússia, russo*, russa*, russia*, putin, kremlin, donbas*, crimeia, crimea, אוקראינה, רוסיה, פוטין, זלנסקי, اوكرانيا, روسيا, بوتين, زيلينسكي, كييف]
+  sudao: [sudão, sudan*, darfur, cartum, khartoum, סודאן, السودان, الخرطوم, الفاشر]
   asia: [taiwan, coreia do norte, north korea*, caxemira, kashmir, myanmar, índia e paquistão, india and pakistan]
   africa: [sahel, mali, burkina faso, níger, somália, somalia, al-shabaab, congo, etiópia, ethiopia, líbia, libya]
   otan: [otan, nato]
@@ -130,6 +169,19 @@ tags:
     - trump
     - rubio
     - hegseth
+    - ארהב
+    - ארצות הברית
+    - טראמפ
+    - הבית הלבן
+    - פנטגון
+    - אמריקא*
+    - الولايات المتحدة
+    - امريكا
+    - امريكي*
+    - واشنطن
+    - ترامب
+    - البنتاغون
+    - البيت الابيض
 
 boost:
   israel: 1.5
@@ -142,4 +194,4 @@ boost:
   eua: 1.2
 
 # Palavras que marcam urgência no título.
-urgent_terms: [urgente, breaking, "última hora", ao vivo agora]
+urgent_terms: [urgente, breaking, "última hora", ao vivo agora, מבזק, عاجل]

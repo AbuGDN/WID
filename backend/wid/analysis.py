@@ -141,6 +141,25 @@ def cluster_framing(cluster: dict) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Lados opostos
+# ---------------------------------------------------------------------------
+
+ONE_SIDE_MIN_SOURCES = 3
+
+
+def cluster_sides(cluster: dict) -> str | None:
+    """"opostos" quando a imprensa árabe e a israelense (ou americana) contam a mesma história;
+    "um_lado" quando uma história grande (3+ veículos) só saiu na imprensa de um dos lados."""
+    origins = {a.get("origin", "internacional") for a in cluster["articles"]}
+    if "arabe" in origins and origins & {"israel", "eua"}:
+        return "opostos"
+    sources = {a["source"] for a in cluster["articles"]}
+    if len(sources) >= ONE_SIDE_MIN_SOURCES and len(origins) == 1 and origins <= {"israel", "arabe"}:
+        return "um_lado"
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Tensão por região e anomalias
 # ---------------------------------------------------------------------------
 

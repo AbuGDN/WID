@@ -171,3 +171,21 @@ def test_top_of_day_prefers_fresh_story(tmp_path):
     new = story("Iran proposes plan to end war with Israel", 4, 1)
     feed = build(tmp_path, NOW, [], k, old + new, {})
     assert feed["top_of_day"]["title"].startswith("Iran proposes")
+
+
+def test_hebrew_and_arabic_are_relevant_and_share_tokens_with_english():
+    from wid.text import tokens
+
+    k = kw()
+    he = 'צה"ל תקף בעזה: 5 הרוגים בתקיפה ברפיח'
+    ar = "غارات إسرائيلية على غزة تقتل 20 فلسطينيا"
+    assert k.match(he, "").relevant and {"gaza", "israel"} <= k.match(he, "").tags
+    assert k.match(ar, "").relevant and {"gaza", "israel"} <= k.match(ar, "").tags
+    assert not k.match("מזג האוויר: גשם בצפון", "").relevant
+    assert not k.match("أسعار النفط ترتفع", "").relevant
+    assert k.match("عاجل: قصف على بيروت", "").urgent
+
+    en = tokens("Israeli strikes on Gaza kill 20 Palestinians")
+    assert {"attack", "gaza", "israel", "killed", "palestinian"} <= tokens(ar) & en
+    assert {"attack", "gaza", "killed", "idf"} <= tokens(he)
+    assert tokens("وقف إطلاق النار في لبنان وحزب الله") >= {"ceasefire", "lebanon", "hezbollah"}

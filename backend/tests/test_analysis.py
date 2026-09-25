@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from wid.analysis import (
     cluster_figures,
     cluster_framing,
+    cluster_sides,
     extract_figures,
     region_tension,
     update_first,
@@ -114,3 +115,16 @@ def test_ages_are_not_casualties_and_overlapping_terms_are_not_framing():
         art("BBC World", "Russian attacks in the east", origin="internacional"),
     ])
     assert cluster_framing(c) == []
+
+
+def test_sides_opposed_and_one_side():
+    both = {"articles": [art("Al Jazeera", "t", origin="arabe"), art("Ynetnews", "t", origin="israel")]}
+    assert cluster_sides(both) == "opostos"
+    usa = {"articles": [art("Al Arabiya", "t", origin="arabe"), art("CNN", "t", origin="eua")]}
+    assert cluster_sides(usa) == "opostos"
+    one = {"articles": [art(s, "t", origin="israel") for s in ("Ynet", "Walla", "Maariv")]}
+    assert cluster_sides(one) == "um_lado"
+    small = {"articles": [art(s, "t", origin="israel") for s in ("Ynet", "Walla")]}
+    assert cluster_sides(small) is None
+    neutral = {"articles": [art(s, "t", origin="brasil") for s in ("G1", "Folha", "Estadão")]}
+    assert cluster_sides(neutral) is None

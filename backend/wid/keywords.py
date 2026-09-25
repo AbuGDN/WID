@@ -6,12 +6,23 @@ from pathlib import Path
 
 import yaml
 
+from .text import normalize_rtl
+
+
+_RTL = re.compile(r"[\u0590-\u06ff]")
+# Prefixos que o hebraico e o árabe colam na palavra ("בעזה", "والقدس").
+_RTL_PREFIX = r"(?:[והבלמשכ]{0,3}|[وفبلك]{0,2})"
+
 
 def _compile(terms: list[str]) -> list[tuple[str, re.Pattern]]:
     compiled = []
     for term in terms:
-        term = term.lower()
-        if term.endswith("*"):
+        term = normalize_rtl(term.lower())
+        if _RTL.search(term):
+            core = re.escape(term.rstrip("*"))
+            tail = r"\w*" if term.endswith("*") else r"(?!\w)"
+            pattern = r"(?<!\w)" + _RTL_PREFIX + core + tail
+        elif term.endswith("*"):
             pattern = r"(?<!\w)" + re.escape(term[:-1]) + r"\w*"
         else:
             pattern = r"(?<!\w)" + re.escape(term) + r"(?!\w)"
@@ -48,7 +59,7 @@ class Keywords:
         return cls(yaml.safe_load(path.read_text(encoding="utf-8")))
 
     def match(self, title: str, summary: str) -> Match:
-        text = f"{title}\n{summary}".lower()
+        text = normalize_rtl(f"{title}\n{summary}".lower())
         m = Match()
         for term, rx in self.war:
             if rx.search(text):
@@ -56,7 +67,7 @@ class Keywords:
         for tag, terms in self.tags.items():
             if any(rx.search(text) for _, rx in terms):
                 m.tags.add(tag)
-        lowered_title = title.lower()
+        lowered_title = normalize_rtl(title.lower())
         m.urgent = any(rx.search(lowered_title) for _, rx in self.urgent)
         return m
 

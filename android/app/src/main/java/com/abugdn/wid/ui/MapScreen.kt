@@ -62,6 +62,14 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polygon
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FilterChip
+import com.abugdn.wid.data.RANGES
+import com.abugdn.wid.data.RangeArc
 
 /**
  * Posição aproximada de cada região. Israel, Gaza, Cisjordânia e Líbano ficam afastados
@@ -127,6 +135,7 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
     }
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var showRanges by rememberSaveable { mutableStateOf(false) }
     var contextTag by remember { mutableStateOf<String?>(null) }
     contextTag?.let { RegionContextDialog(it, onOpen) { contextTag = null } }
     Scaffold(
@@ -141,6 +150,16 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
             if (tab == 1) {
                 TrendBody(onRegion)
             } else {
+            Row(Modifier.padding(horizontal = 16.dp)) {
+                FilterChip(
+                    selected = showRanges,
+                    onClick = {
+                        showRanges = !showRanges
+                        if (showRanges) mapView.controller.animateTo(GeoPoint(30.0, 42.0), 3.6, 600L)
+                    },
+                    label = { Text("🎯 Alcance de mísseis e defesas") },
+                )
+            }
             // O MapView desenha fora dos próprios limites ao arrastar/dar zoom; a moldura com
             // clipChildren e o clipToBounds impedem que ele pinte por cima do resto da tela.
             AndroidView(
@@ -155,7 +174,9 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
                 modifier = Modifier.fillMaxWidth().weight(0.6f).clipToBounds(),
                 update = { _ ->
                     val map = mapView
-                    map.overlays.removeAll { it is Marker }
+                    map.overlays.removeAll { it is Marker || it is Polygon }
+                    // Círculos antes dos marcadores, para os marcadores ficarem por cima e receberem o toque.
+                    if (showRanges) RANGES.forEach { map.overlays.add(rangePolygon(map, it)) }
                     counts.forEach { (tag, n) ->
                         val point = REGION_POINTS[tag] ?: return@forEach
                         map.overlays.add(Marker(map).apply {
@@ -179,6 +200,22 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
                 modifier = Modifier.padding(16.dp, 8.dp),
             )
             LazyColumn(Modifier.weight(0.4f)) {
+                if (showRanges) {
+                    items(RANGES, key = { it.label }) { arc ->
+                        RangeLegendRow(arc) { mapView.controller.animateTo(GeoPoint(arc.lat, arc.lon), rangeZoom(arc.km), 600L) }
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    }
+                    item {
+                        Text(
+                            "Alcances aproximados, de fontes abertas (até 2025). Vermelho: ataque; ouro: defesa. " +
+                                "As posições das defesas são ilustrativas.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp),
+                        )
+                        HorizontalDivider()
+                    }
+                }
                 items(counts.entries.sortedByDescending { it.value }.toList(), key = { it.key }) { (tag, n) ->
                     Row(
                         Modifier.fillMaxWidth().clickable { onRegion(tag) }.padding(start = 16.dp, end = 4.dp),
@@ -208,6 +245,50 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
                 }
             }
             }
+        }
+    }
+}
+
+private val RANGE_RED = 0xFFB3122E.toInt()
+private val RANGE_GOLD = 0xFFC9A227.toInt()
+
+/** Círculo geodésico de alcance: vermelho para ataque, ouro para defesa. */
+private fun rangePolygon(map: MapView, arc: RangeArc): Polygon = Polygon(map).apply {
+    setPoints(Polygon.pointsAsCircle(GeoPoint(arc.lat, arc.lon), arc.km * 1000.0))
+    val color = if (arc.defense) RANGE_GOLD else RANGE_RED
+    outlinePaint.color = color
+    outlinePaint.strokeWidth = 2.5f * map.context.resources.displayMetrics.density
+    fillPaint.color = (color and 0x00FFFFFF) or (if (arc.defense) 0x40000000 else 0x18000000)
+    title = arc.label
+    // Não "engole" o toque: o mapa continua arrastável e os marcadores clicáveis.
+    setOnClickListener { _, _, _ -> false }
+}
+
+private fun rangeZoom(km: Int): Double = when {
+    km >= 1500 -> 3.4
+    km >= 400 -> 5.0
+    km >= 150 -> 6.0
+    else -> 7.2
+}
+
+@Composable
+private fun RangeLegendRow(arc: RangeArc, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp, 10.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            Modifier.padding(top = 5.dp).size(10.dp)
+                .background(if (arc.defense) Accent else Alert, CircleShape)
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                "${arc.label} · ${"%,d".format(arc.km).replace(',', '.')} km",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(arc.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

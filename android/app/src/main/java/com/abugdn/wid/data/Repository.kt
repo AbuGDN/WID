@@ -79,6 +79,21 @@ class Repository(context: Context) {
         }
     }
 
+    private val _vigil = MutableStateFlow(storage.loadVigil())
+    /** Registro de vigília: todos os alertas vistos, com data e hora (mais recentes primeiro). */
+    val vigil: StateFlow<List<VigilEvent>> = _vigil.asStateFlow()
+
+    @Synchronized
+    private fun recordVigil(feed: Feed) {
+        val now = System.currentTimeMillis()
+        val day = java.time.LocalDate.now().toString()
+        val next = Vigil.merge(_vigil.value, Vigil.detect(feed, now, day))
+        if (next !== _vigil.value) {
+            storage.saveVigil(next)
+            _vigil.value = next
+        }
+    }
+
     private val _stats = MutableStateFlow<DailyStats?>(null)
     val stats: StateFlow<DailyStats?> = _stats.asStateFlow()
 
@@ -127,7 +142,9 @@ class Repository(context: Context) {
         runCatching {
             val raw = getData("feed.json?t=${System.currentTimeMillis() / 60_000}")
             val feed = json.decodeFromString<Feed>(raw)
-            val texts = feedTexts(feed) + textsOf(_saved.value) + textsOf(_archive.value.orEmpty().map { it.top })
+            recordVigil(feed)
+            val texts = feedTexts(feed) + textsOf(_saved.value) + textsOf(_archive.value.orEmpty().map { it.top }) +
+                _vigil.value.filter { it.lang != "pt" }.map { it.title }
             translator.translateAll(texts)
             storage.saveTranslations(keep = texts)
             storage.saveFeed(raw)

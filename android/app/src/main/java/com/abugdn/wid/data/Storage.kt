@@ -17,6 +17,7 @@ class Storage(context: Context) {
     private val savedMetaFile = File(dir, "saved_meta.json")
     private val snapshotsFile = File(dir, "read_snapshots.json")
     private val readLogFile = File(dir, "read_log.json")
+    private val vigilFile = File(dir, "vigil.json")
     private val articlesDir = File(dir, "articles").apply { mkdirs() }
     val prefs = context.getSharedPreferences("wid", Context.MODE_PRIVATE)
 
@@ -75,6 +76,13 @@ class Storage(context: Context) {
 
     fun saveReadLog(list: List<ReadEvent>) =
         writeAtomic(readLogFile, json.encodeToString(ListSerializer(ReadEvent.serializer()), list))
+
+    fun loadVigil(): List<VigilEvent> = runCatching {
+        json.decodeFromString(ListSerializer(VigilEvent.serializer()), vigilFile.readText())
+    }.getOrDefault(emptyList())
+
+    fun saveVigil(list: List<VigilEvent>) =
+        writeAtomic(vigilFile, json.encodeToString(ListSerializer(VigilEvent.serializer()), list))
 
     /** Apaga textos completos com mais de [maxAgeDays] dias, menos os das notícias salvas. */
     fun pruneFullTexts(keep: Set<String>, maxAgeDays: Int = 30) {

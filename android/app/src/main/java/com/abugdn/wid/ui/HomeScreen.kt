@@ -334,6 +334,7 @@ fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
                 "URGENTE".takeIf { c.urgent },
                 "NOVA".takeIf { isNew },
                 "+$addedSinceRead DESDE SUA LEITURA".takeIf { addedSinceRead > 0 },
+                sidesBadge(c),
             )
             if (badges.isNotEmpty()) {
                 Text(badges.joinToString(" · "), color = if (c.urgent) Alert else Accent, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)

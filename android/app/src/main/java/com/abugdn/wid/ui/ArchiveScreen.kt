@@ -1,7 +1,11 @@
 package com.abugdn.wid.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,11 +41,12 @@ import kotlinx.coroutines.launch
 /** A principal de cada dia, do mais recente para o mais antigo. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArchiveScreen(onOpen: (String) -> Unit) {
+fun ArchiveScreen(onOpen: (String) -> Unit, onVigil: () -> Unit, onBulletin: () -> Unit) {
     val repo = LocalContext.current.repository
     val archive by repo.archive.collectAsStateWithLifecycle()
     val translator = repo.translator
     val first by repo.first.collectAsStateWithLifecycle()
+    val vigil by repo.vigil.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { if (repo.first.value == null) repo.loadFirst() }
     val scope = rememberCoroutineScope()
     var loading by remember { mutableStateOf(false) }
@@ -63,6 +68,17 @@ fun ArchiveScreen(onOpen: (String) -> Unit) {
                 if (error) item { Text("Sem conexão.", color = Accent, modifier = Modifier.padding(16.dp)) }
                 if (archive.isNullOrEmpty() && !loading) {
                     item { Text("Nada no arquivo ainda. O servidor guarda um dia por vez a partir de 24/09/2026.", modifier = Modifier.padding(24.dp)) }
+                }
+                item {
+                    Row(
+                        Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilledTonalButton(onClick = onBulletin, modifier = Modifier.weight(1f)) { Text("🗞 Boletim semanal") }
+                        OutlinedButton(onClick = onVigil, modifier = Modifier.weight(1f)) {
+                            Text(if (vigil.isEmpty()) "📜 Vigília" else "📜 Vigília (${vigil.size})")
+                        }
+                    }
                 }
                 item { YourWeekCard(onOpen) }
                 item { first?.let { FirstRankingCard(it, Modifier.padding(16.dp, 8.dp)) } }

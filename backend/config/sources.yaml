@@ -2,6 +2,7 @@
 # uma fica em sources_status.json no site publicado, para podar as quebradas.
 #
 # url: uma URL ou uma lista de alternativas (tentadas em ordem)
+# lang: pt | en | he | ar (hebraico e árabe são traduzidos no aparelho)
 # origin: israel | arabe | eua | internacional | brasil (usado em "como cada lado noticiou")
 # weight: peso na escolha do título de um grupo e no ranking (1.0 = normal)
 
@@ -23,6 +24,56 @@ sources:
   # --- Mundo árabe / regional ---
   - {name: Al Jazeera, url: "https://www.aljazeera.com/xml/rss/all.xml", lang: en, origin: arabe, weight: 1.0}
   - {name: Middle East Eye, url: "https://www.middleeasteye.net/rss", lang: en, origin: arabe, weight: 0.9}
+
+  # --- Imprensa local em hebraico e árabe (traduzida no aparelho) ---
+  # Se o feed direto falhar (bloqueio de IP), usa as manchetes via Google News.
+  - name: Ynet (hebraico)
+    url:
+      - "https://www.ynet.co.il/Integration/StoryRss2.xml"
+      - "https://news.google.com/rss/search?q=site:ynet.co.il+when:2d&hl=he&gl=IL&ceid=IL:he"
+    lang: he
+    origin: israel
+    weight: 0.8
+  - name: Walla (hebraico)
+    url:
+      - "https://rss.walla.co.il/feed/1?type=main"
+      - "https://news.google.com/rss/search?q=site:news.walla.co.il+when:2d&hl=he&gl=IL&ceid=IL:he"
+    lang: he
+    origin: israel
+    weight: 0.8
+  - name: Maariv (hebraico)
+    url:
+      - "https://www.maariv.co.il/Rss/RssFeedsMivzakiChadashot"
+      - "https://news.google.com/rss/search?q=site:maariv.co.il+when:2d&hl=he&gl=IL&ceid=IL:he"
+    lang: he
+    origin: israel
+    weight: 0.8
+  - name: Haaretz (hebraico)
+    url: "https://news.google.com/rss/search?q=site:haaretz.co.il+when:2d&hl=he&gl=IL&ceid=IL:he"
+    lang: he
+    origin: israel
+    weight: 0.8
+  - name: Al Jazeera (árabe)
+    url:
+      - "https://www.aljazeera.net/aljazeerarss/a7c186be-1baa-4bd4-9d80-a84db769f779/73d0e1b4-532f-45ef-b135-bfdff8b8cab9"
+      - "https://news.google.com/rss/search?q=site:aljazeera.net+when:2d&hl=ar&gl=SA&ceid=SA:ar"
+    lang: ar
+    origin: arabe
+    weight: 0.8
+  - name: Al Arabiya (árabe)
+    url:
+      - "https://www.alarabiya.net/.mrss/ar.xml"
+      - "https://news.google.com/rss/search?q=site:alarabiya.net+when:2d&hl=ar&gl=SA&ceid=SA:ar"
+    lang: ar
+    origin: arabe
+    weight: 0.8
+  - name: Asharq Al-Awsat (árabe)
+    url:
+      - "https://aawsat.com/feed"
+      - "https://news.google.com/rss/search?q=site:aawsat.com+when:2d&hl=ar&gl=SA&ceid=SA:ar"
+    lang: ar
+    origin: arabe
+    weight: 0.8
 
   # --- Internacionais ---
   - {name: BBC Middle East, url: "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml", lang: en, origin: internacional, weight: 1.2}

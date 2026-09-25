@@ -102,7 +102,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     update(reschedule = true) { st -> st.copy(digestHour = it) }
                 }
             }
-            Toggle("Resumo da semana", "Domingo, junto do resumo diário: as 5 principais dos últimos 7 dias", s.weeklyDigest) {
+            Toggle("Boletim semanal", "Domingo, junto do resumo diário: as 5 principais dos últimos 7 dias e o boletim em imagem para compartilhar", s.weeklyDigest) {
                 update(reschedule = true) { st -> st.copy(weeklyDigest = it) }
             }
             Toggle(

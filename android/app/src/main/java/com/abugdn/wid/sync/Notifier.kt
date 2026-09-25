@@ -22,6 +22,7 @@ import com.abugdn.wid.data.matchWatchWord
 import com.abugdn.wid.repository
 import com.abugdn.wid.data.TAG_LABELS
 import com.abugdn.wid.ui.EXTRA_CLUSTER_ID
+import com.abugdn.wid.ui.EXTRA_SHORTCUT
 import com.abugdn.wid.ui.EXTRA_REGION
 import com.abugdn.wid.ui.MainActivity
 import java.time.Instant
@@ -162,7 +163,7 @@ object Notifier {
         }
     }
 
-    /** Resumo da semana: as 5 principais dos últimos 7 dias do arquivo. */
+    /** Resumo da semana: as 5 principais dos últimos 7 dias; tocar abre o boletim em imagem. */
     @SuppressLint("MissingPermission") // checado em canNotify
     fun weekly(context: Context, days: List<HistoryDay>) {
         if (!canNotify(context) || days.isEmpty()) return
@@ -172,10 +173,10 @@ object Notifier {
         best.forEach { style.addLine("• " + repo.translator.display(it.top.title, it.top.lang)) }
         val notification = NotificationCompat.Builder(context, CHANNEL_DIGEST)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Resumo da semana")
+            .setContentTitle("🗞 Boletim semanal do Argos pronto")
             .setContentText(repo.translator.display(best.first().top.title, best.first().top.lang))
-            .setStyle(style)
-            .setContentIntent(openIntent(context, best.first().top.id))
+            .setStyle(style.setSummaryText("Toque para ver e compartilhar a imagem da semana"))
+            .setContentIntent(shortcutIntent(context, "bulletin"))
             .setAutoCancel(true)
             .build()
         NotificationManagerCompat.from(context).notify(WEEKLY_ID, notification)
@@ -234,6 +235,16 @@ object Notifier {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         return PendingIntent.getActivity(
             context, clusterId.hashCode(), intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    private fun shortcutIntent(context: Context, shortcut: String): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java)
+            .putExtra(EXTRA_SHORTCUT, shortcut)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        return PendingIntent.getActivity(
+            context, ("shortcut:$shortcut").hashCode(), intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
