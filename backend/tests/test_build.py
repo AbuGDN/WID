@@ -9,8 +9,8 @@ from wid.keywords import Keywords
 FIXTURES = Path(__file__).parent / "fixtures"
 NOW = datetime(2026, 9, 24, 10, 0, tzinfo=timezone.utc)
 SOURCES = [
-    {"name": "IL News", "url": "x", "lang": "en", "weight": 1.2, "file": "israel_en.xml"},
-    {"name": "Mundo BR", "url": "x", "lang": "pt", "weight": 1.0, "file": "mundo_pt.xml"},
+    {"name": "IL News", "url": "x", "lang": "en", "weight": 1.2, "origin": "israel", "file": "israel_en.xml"},
+    {"name": "Mundo BR", "url": "x", "lang": "pt", "weight": 1.0, "origin": "brasil", "file": "mundo_pt.xml"},
     {"name": "Intl", "url": "x", "lang": "en", "weight": 1.0, "file": "intl_en.xml"},
 ]
 
@@ -125,3 +125,19 @@ def test_google_news_titles_lose_publisher_suffix():
     _from_google_news(arts)
     assert arts[0].title == "IDF strikes Hezbollah in Lebanon"
     assert arts[0].summary == ""
+
+
+def test_origin_and_daily_stats(tmp_path):
+    feed = build(tmp_path, NOW, SOURCES, kw(), fetched(), {})
+    origins = {a["source"]: a["origin"] for a in feed["top_of_day"]["articles"]}
+    assert origins == {"IL News": "israel", "Mundo BR": "brasil", "Intl": "internacional"}
+
+    stats = json.loads((tmp_path / "stats" / "daily.json").read_text())
+    today = stats["days"][-1]
+    assert today["date"] == "2026-09-24"
+    assert today["total"] == 2
+    assert today["counts"]["israel"] == 1 and today["counts"]["ucrania_russia"] == 1
+
+    # Uma segunda rodada no mesmo dia sobrescreve o dia, não duplica.
+    build(tmp_path, NOW, SOURCES, kw(), [], {})
+    assert len(json.loads((tmp_path / "stats" / "daily.json").read_text())["days"]) == 1

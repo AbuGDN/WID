@@ -2,6 +2,7 @@
 # uma fica em sources_status.json no site publicado, para podar as quebradas.
 #
 # url: uma URL ou uma lista de alternativas (tentadas em ordem)
+# origin: israel | arabe | internacional | brasil (usado em "como cada lado noticiou")
 # weight: peso na escolha do título de um grupo e no ranking (1.0 = normal)
 
 sources:
@@ -13,30 +14,31 @@ sources:
       - "https://www.timesofisrael.com/feed/"
       - "https://news.google.com/rss/search?q=site:timesofisrael.com+when:2d&hl=en-US&gl=US&ceid=US:en"
     lang: en
+    origin: israel
     weight: 1.2
-  - {name: Jerusalem Post, url: "https://www.jpost.com/rss/rssfeedsheadlines.aspx", lang: en, weight: 1.1}
-  - {name: Ynetnews, url: "https://www.ynetnews.com/Integration/StoryRss3089.xml", lang: en, weight: 1.1}
-  - {name: Israel Hayom, url: "https://www.israelhayom.com/feed/", lang: en, weight: 1.0}
+  - {name: Jerusalem Post, url: "https://www.jpost.com/rss/rssfeedsheadlines.aspx", lang: en, origin: israel, weight: 1.1}
+  - {name: Ynetnews, url: "https://www.ynetnews.com/Integration/StoryRss3089.xml", lang: en, origin: israel, weight: 1.1}
+  - {name: Israel Hayom, url: "https://www.israelhayom.com/feed/", lang: en, origin: israel, weight: 1.0}
 
   # --- Mundo árabe / regional ---
-  - {name: Al Jazeera, url: "https://www.aljazeera.com/xml/rss/all.xml", lang: en, weight: 1.0}
-  - {name: Middle East Eye, url: "https://www.middleeasteye.net/rss", lang: en, weight: 0.9}
+  - {name: Al Jazeera, url: "https://www.aljazeera.com/xml/rss/all.xml", lang: en, origin: arabe, weight: 1.0}
+  - {name: Middle East Eye, url: "https://www.middleeasteye.net/rss", lang: en, origin: arabe, weight: 0.9}
 
   # --- Internacionais ---
-  - {name: BBC Middle East, url: "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml", lang: en, weight: 1.2}
-  - {name: BBC World, url: "https://feeds.bbci.co.uk/news/world/rss.xml", lang: en, weight: 1.1}
-  - {name: The Guardian, url: "https://www.theguardian.com/world/rss", lang: en, weight: 1.1}
-  - {name: NYT World, url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", lang: en, weight: 1.1}
-  - {name: DW, url: "https://rss.dw.com/rdf/rss-en-world", lang: en, weight: 1.0}
-  - {name: France 24, url: "https://www.france24.com/en/rss", lang: en, weight: 1.0}
-  - {name: Kyiv Independent, url: ["https://kyivindependent.com/feed/", "https://kyivindependent.com/news-archive/rss/"], lang: en, weight: 0.9}
+  - {name: BBC Middle East, url: "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml", lang: en, origin: internacional, weight: 1.2}
+  - {name: BBC World, url: "https://feeds.bbci.co.uk/news/world/rss.xml", lang: en, origin: internacional, weight: 1.1}
+  - {name: The Guardian, url: "https://www.theguardian.com/world/rss", lang: en, origin: internacional, weight: 1.1}
+  - {name: NYT World, url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", lang: en, origin: internacional, weight: 1.1}
+  - {name: DW, url: "https://rss.dw.com/rdf/rss-en-world", lang: en, origin: internacional, weight: 1.0}
+  - {name: France 24, url: "https://www.france24.com/en/rss", lang: en, origin: internacional, weight: 1.0}
+  - {name: Kyiv Independent, url: ["https://kyivindependent.com/feed/", "https://kyivindependent.com/news-archive/rss/"], lang: en, origin: internacional, weight: 0.9}
 
   # --- Em português ---
-  - {name: G1, url: "https://g1.globo.com/rss/g1/mundo/", lang: pt, weight: 1.1}
-  - {name: Folha, url: "https://feeds.folha.uol.com.br/mundo/rss091.xml", lang: pt, weight: 1.1}
-  - {name: BBC Brasil, url: "https://feeds.bbci.co.uk/portuguese/rss.xml", lang: pt, weight: 1.1}
-  - {name: DW Brasil, url: ["https://rss.dw.com/rdf/rss-br-all", "https://rss.dw.com/xml/rss-br-all"], lang: pt, weight: 1.0}
-  - {name: CNN Brasil, url: ["https://www.cnnbrasil.com.br/internacional/feed/", "https://www.cnnbrasil.com.br/feed/"], lang: pt, weight: 1.0}
-  - {name: Estadão, url: "https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/internacional/", lang: pt, weight: 1.0}
-  - {name: RFI Brasil, url: "https://www.rfi.fr/br/rss", lang: pt, weight: 1.0}
-  - {name: Poder360, url: ["https://www.poder360.com.br/internacional/feed/", "https://www.poder360.com.br/feed/"], lang: pt, weight: 0.9}
+  - {name: G1, url: "https://g1.globo.com/rss/g1/mundo/", lang: pt, origin: brasil, weight: 1.1}
+  - {name: Folha, url: "https://feeds.folha.uol.com.br/mundo/rss091.xml", lang: pt, origin: brasil, weight: 1.1}
+  - {name: BBC Brasil, url: "https://feeds.bbci.co.uk/portuguese/rss.xml", lang: pt, origin: brasil, weight: 1.1}
+  - {name: DW Brasil, url: ["https://rss.dw.com/rdf/rss-br-all", "https://rss.dw.com/xml/rss-br-all"], lang: pt, origin: brasil, weight: 1.0}
+  - {name: CNN Brasil, url: ["https://www.cnnbrasil.com.br/internacional/feed/", "https://www.cnnbrasil.com.br/feed/"], lang: pt, origin: brasil, weight: 1.0}
+  - {name: Estadão, url: "https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/internacional/", lang: pt, origin: brasil, weight: 1.0}
+  - {name: RFI Brasil, url: "https://www.rfi.fr/br/rss", lang: pt, origin: brasil, weight: 1.0}
+  - {name: Poder360, url: ["https://www.poder360.com.br/internacional/feed/", "https://www.poder360.com.br/feed/"], lang: pt, origin: brasil, weight: 0.9}

@@ -37,6 +37,7 @@ class Article:
     weight: float
     published: datetime
     image: str | None = None
+    origin: str = "internacional"
 
     def to_json(self) -> dict:
         return {
@@ -48,10 +49,11 @@ class Article:
             "lang": self.lang,
             "published": iso(self.published),
             "image": self.image,
+            "origin": self.origin,
         }
 
     @classmethod
-    def from_json(cls, data: dict, weight: float = 1.0) -> "Article":
+    def from_json(cls, data: dict, weight: float = 1.0, origin: str | None = None) -> "Article":
         url = canonical_url(data["url"])
         return cls(
             id=article_id(url),
@@ -63,6 +65,7 @@ class Article:
             weight=weight,
             published=parse_iso(data["published"]),
             image=data.get("image"),
+            origin=origin or data.get("origin", "internacional"),
         )
 
 
@@ -135,6 +138,7 @@ def parse_feed(data: bytes, source: dict, now: datetime) -> list[Article]:
                 weight=float(source.get("weight", 1.0)),
                 published=_entry_time(entry, now),
                 image=_entry_image(entry),
+                origin=source.get("origin", "internacional"),
             )
         )
     return articles

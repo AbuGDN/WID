@@ -25,9 +25,10 @@ TOP_WINDOW = timedelta(hours=24)
 URGENT_WINDOW = timedelta(hours=2)
 URGENT_MIN_SOURCES = 5
 SECONDARY_COUNT = 4
+STATS_DAYS = 30
 
 
-def load_previous(out: Path, weights: dict[str, float]) -> list[Article]:
+def load_previous(out: Path, weights: dict[str, float], origins: dict[str, str]) -> list[Article]:
     path = out / "feed.json"
     if not path.exists():
         return []
@@ -37,7 +38,7 @@ def load_previous(out: Path, weights: dict[str, float]) -> list[Article]:
         log.warning("feed.json anterior ilegível: %s", exc)
         return []
     return [
-        Article.from_json(a, weights.get(a["source"], 1.0))
+        Article.from_json(a, weights.get(a["source"], 1.0), origins.get(a["source"]))
         for c in data.get("clusters", [])
         for a in c.get("articles", [])
     ]
@@ -61,9 +62,26 @@ def write_json(path: Path, data) -> None:
     tmp.replace(path)
 
 
+def write_stats(out: Path, today, started_today: list[dict]) -> None:
+    """stats/daily.json: quantas histórias começaram em cada dia, por região (últimos 30 dias)."""
+    path = out / "stats" / "daily.json"
+    try:
+        days = {d["date"]: d for d in json.loads(path.read_text(encoding="utf-8"))["days"]}
+    except (OSError, ValueError, KeyError):
+        days = {}
+    counts: dict[str, int] = {}
+    for c in started_today:
+        for tag in c["tags"]:
+            counts[tag] = counts.get(tag, 0) + 1
+    days[today.isoformat()] = {"date": today.isoformat(), "total": len(started_today), "counts": counts}
+    keep = sorted(days)[-STATS_DAYS:]
+    write_json(path, {"days": [days[d] for d in keep]})
+
+
 def build(out: Path, now: datetime, sources: list[dict], kw: Keywords, fetched: list[Article], status: dict) -> dict:
     weights = {s["name"]: float(s.get("weight", 1.0)) for s in sources}
-    articles = merge(load_previous(out, weights), fetched)
+    origins = {s["name"]: s["origin"] for s in sources if "origin" in s}
+    articles = merge(load_previous(out, weights, origins), fetched)
     articles = [
         a for a in articles
         if now - a.published <= KEEP_WINDOW and kw.match(a.title, a.summary).relevant
@@ -100,6 +118,8 @@ def build(out: Path, now: datetime, sources: list[dict], kw: Keywords, fetched: 
         write_json(out / "history" / f"{today.isoformat()}.json", {"date": today.isoformat(), "top": best})
     days = sorted((p.stem for p in (out / "history").glob("*.json") if p.stem != "index"), reverse=True)
     write_json(out / "history" / "index.json", {"days": days})
+
+    write_stats(out, today, started_today)
 
     write_json(out / "sources_status.json", {"generated_at": iso(now), "sources": status})
     (out / ".nojekyll").touch()
