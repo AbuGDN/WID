@@ -11,6 +11,15 @@ data class ChangelogEntry(val versionCode: Long, val items: List<String>)
 
 val CHANGELOG = listOf(
     ChangelogEntry(
+        14,
+        listOf(
+            "🌐 Tradução afinada para guerra: siglas agora saem certas (US → Estados Unidos, e não \"nós\"; IDF → Forças de Defesa de Israel; UN → Nações Unidas; IRGC, ISIS, UAE, PM...).",
+            "🗺 Países e cidades no português do Brasil: Irã, Iêmen, Teerã, Moscou, Oriente Médio, Cisjordânia, Turquia (e não \"peru\")...",
+            "💥 Termos militares corrigidos: strike vira ataque (não greve), shelling vira fogo de artilharia, carrier vira porta-aviões, barrage vira saraivada.",
+            "🔁 As traduções antigas são refeitas automaticamente com as regras novas.",
+        ),
+    ),
+    ChangelogEntry(
         13,
         listOf(
             "🌡 Índice de tensão (0–100) por região: volume, palavras de escalada, urgência e cobertura comparados com o normal. Na página da região, na lista do Mapa e no widget por região.",

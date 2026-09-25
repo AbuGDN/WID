@@ -68,6 +68,10 @@ android/app/src/main/java/com/abugdn/wid/
   se mudar o backend, o ciclo em andamento pega o código novo na rodada seguinte.
 - **Times of Israel** bloqueia os IPs do GitHub (403); cai para Google News (links de redirecionamento,
   sem resumo). `lead()` evita usar esses links como título do grupo.
+- **Tradução**: `data/TranslationGlossary.kt` corrige o ML Kit (pré: siglas/termos ambíguos em inglês
+  viram a forma por extenso; pós: pt-PT→pt-BR, termos militares, nomes em inglês, concordância com
+  "Estados Unidos"). Testes em `android/app/src/test/` (rodam no CI). Ao mudar regras, aumente
+  `VERSION` — o app descarta e refaz as traduções guardadas.
 - Extração de números: idades ("14-year-old"), anos e porcentagens não são vítimas (há teste).
 - Textos de contexto/pessoas/marcos vão até 2025 e mostram aviso de data; ao atualizar, mantenha o tom
   neutro e factual.

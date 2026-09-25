@@ -31,7 +31,8 @@ jobs:
 
       - name: Compilar APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        # Testes de unidade (glossário de tradução etc.) antes de compilar.
+        run: ./gradlew testReleaseUnitTest assembleRelease --no-daemon --stacktrace
 
       - name: Renomear APK
         run: |

@@ -39,6 +39,12 @@ class Repository(context: Context) {
     val feed: StateFlow<Feed?> = _feed.asStateFlow()
 
     init {
+        // Regras de tradução mudaram: descarta títulos/resumos traduzidos com as regras antigas.
+        if (storage.prefs.getInt("glossary_version", 0) != TranslationGlossary.VERSION) {
+            storage.translations.clear()
+            storage.saveTranslations()
+            storage.prefs.edit().putInt("glossary_version", TranslationGlossary.VERSION).apply()
+        }
         translator.wifiOnly = settings.value.dataSaver
         settings.onChange = {
             _feed.value = applySourcePrefs(raw, it)
@@ -267,7 +273,8 @@ class Repository(context: Context) {
     suspend fun fullText(cluster: Cluster, translate: Boolean = true): Result<FullText> =
         withContext(Dispatchers.IO) {
             storage.loadFullText(cluster.id)?.let { cached ->
-                if (cached.lang == "pt" || cached.translated != null || !translate) {
+                val upToDate = cached.translated != null && cached.glossary >= TranslationGlossary.VERSION
+                if (cached.lang == "pt" || upToDate || !translate) {
                     return@withContext Result.success(cached)
                 }
                 return@withContext Result.success(addTranslation(cluster.id, cached))
@@ -295,7 +302,8 @@ class Repository(context: Context) {
 
     private suspend fun addTranslation(id: String, text: FullText): FullText {
         val translated = translator.translateList(text.paragraphs) ?: return text
-        return text.copy(translated = translated).also { storage.saveFullText(id, it) }
+        return text.copy(translated = translated, glossary = TranslationGlossary.VERSION)
+            .also { storage.saveFullText(id, it) }
     }
 
     /** Baixa antecipadamente o texto das principais histórias, para ler offline. */

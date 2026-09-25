@@ -153,6 +153,8 @@ data class FullText(
     val lang: String,
     val paragraphs: List<String>,
     val translated: List<String>? = null,
+    /** Versão do glossário usada na tradução; menor que a atual = retraduzir. */
+    val glossary: Int = 0,
     val fetchedAt: Long = System.currentTimeMillis(),
 )
 

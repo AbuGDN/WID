@@ -79,4 +79,6 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("net.dankito.readability4j:readability4j:1.0.8")
+
+    testImplementation("junit:junit:4.13.2")
 }

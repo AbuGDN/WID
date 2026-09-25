@@ -39,6 +39,10 @@ class Translator(private val storage: Storage) {
         return modelReady
     }
 
+    /** ML Kit com o glossário de guerra em volta (siglas, países, termos militares). */
+    private suspend fun translateOne(text: String): String =
+        TranslationGlossary.postprocess(client.translate(TranslationGlossary.preprocess(text)).await())
+
     /** Traduz e guarda no cache o que ainda não foi traduzido. */
     suspend fun translateAll(texts: Collection<String>): Boolean {
         val missing = texts.filter { it.isNotBlank() && it !in storage.translations }.distinct()
@@ -46,7 +50,7 @@ class Translator(private val storage: Storage) {
         if (!ensureModel()) return false
         mutex.withLock {
             for (text in missing) {
-                runCatching { client.translate(text).await() }
+                runCatching { translateOne(text) }
                     .onSuccess { storage.translations[text] = it }
             }
         }
@@ -57,7 +61,7 @@ class Translator(private val storage: Storage) {
     suspend fun translateList(texts: List<String>): List<String>? {
         if (!ensureModel()) return null
         return mutex.withLock {
-            texts.map { runCatching { client.translate(it).await() }.getOrDefault(it) }
+            texts.map { runCatching { translateOne(it) }.getOrDefault(it) }
         }
     }
 }
