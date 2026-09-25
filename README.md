@@ -1,0 +1,167 @@
+# WID — notícias de guerra
+
+App Android pessoal (para até 5 pessoas) com notícias de guerra, foco em Israel/Oriente Médio, tudo em
+português, com widget, notificações e **custo zero**. O "servidor" é o próprio GitHub: um workflow coleta
+~26 feeds RSS a cada 30 min, agrupa e analisa as notícias e publica JSONs na branch `gh-pages`; o app lê
+esses JSONs, traduz no próprio celular e guarda tudo offline.
+
+- Repositório: https://github.com/AbuGDN/WID (público)
+- Releases (APK): https://github.com/AbuGDN/WID/releases
+- Dados publicados: `https://raw.githubusercontent.com/AbuGDN/WID/gh-pages/feed.json` (e `top.json`, `history/`, `stats/`, `sagas.json`, `sources_status.json`)
+- Histórico de decisões e fases: [`PLANO.md`](PLANO.md)
+- Contexto para o Claude Code: [`CLAUDE.md`](CLAUDE.md)
+
+---
+
+## Levar o projeto para o seu PC
+
+O projeto inteiro já está no GitHub; "transferir" é só clonar. Nada na nuvem depende desta sessão: a
+coleta de notícias e a compilação do APK continuam rodando no GitHub Actions.
+
+### 1. Instalar as ferramentas
+
+| Para quê | O quê | Observação |
+|---|---|---|
+| Tudo | [Git](https://git-scm.com/downloads) | |
+| Servidor (backend) | [Python 3.11+](https://www.python.org/downloads/) | No Windows, marque "Add python.exe to PATH" |
+| App Android | [Android Studio](https://developer.android.com/studio) | Já traz o JDK 17 e o Android SDK. Instale o **SDK Platform 35** pelo SDK Manager |
+| Assistente | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | Opcional: `npm install -g @anthropic-ai/claude-code` (precisa de Node 18+) |
+
+### 2. Clonar
+
+```bash
+git clone https://github.com/AbuGDN/WID.git
+cd WID
+git checkout claude/adoring-hamilton-kr5stn   # branch onde está todo o código (é a padrão hoje)
+```
+
+> **Recomendado:** criar uma branch `main` e torná-la a padrão (veja [Branches](#branches)).
+
+### 3. Rodar o servidor (backend) localmente
+
+```bash
+cd backend
+python -m venv .venv
+# Linux/macOS:
+source .venv/bin/activate
+# Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+
+pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -q                  # testes com feeds de exemplo (sem internet)
+python -m wid.build --out ../site    # baixa os feeds de verdade e gera os JSONs em ../site
+```
+
+A pasta `site/` é ignorada pelo Git. Para testar em cima dos dados reais já publicados:
+`git fetch origin gh-pages && git worktree add site origin/gh-pages` antes de rodar o `wid.build`.
+
+### 4. Abrir e rodar o app
+
+1. Android Studio → **Open** → escolha a pasta `android/` (não a raiz do repositório).
+2. Espere o Gradle sincronizar (a primeira vez baixa ~1 GB de dependências).
+3. Rode num emulador ou no celular (ative "Depuração USB" nas Opções do desenvolvedor).
+
+Pela linha de comando:
+
+```bash
+cd android
+./gradlew assembleRelease        # Windows: gradlew.bat assembleRelease
+# APK em android/app/build/outputs/apk/release/app-release.apk
+```
+
+> ⚠️ **Número da versão em builds locais.** O `versionCode` vem da variável `WID_VERSION_CODE` (no CI é o
+> número da execução do workflow "App Android"). Sem ela, a build local sai como versão 1 e o Android
+> **recusa instalar por cima** de uma versão maior. Para testar no seu celular sem desinstalar, use o
+> mesmo número da última release: `WID_VERSION_CODE=13 ./gradlew installRelease`
+> (PowerShell: `$env:WID_VERSION_CODE=13; .\gradlew.bat installRelease`).
+> **Nunca** instale um número maior que o da próxima release do CI, senão as atualizações automáticas
+> param de instalar (o Android não aceita "voltar" de versão).
+
+### 5. Publicar uma versão nova do app
+
+Não precisa compilar no PC: **todo push que mexe em `android/` compila e publica uma release** sozinho
+(workflow `build-android.yml`). O app de cada pessoa detecta a versão nova ao abrir e oferece atualizar.
+
+Antes do push, acrescente as novidades no topo de `CHANGELOG` em
+`android/app/src/main/java/com/abugdn/wid/data/WhatsNew.kt`, com o `versionCode` **esperado**:
+o número da última execução de "App Android" em https://github.com/AbuGDN/WID/actions + 1
+(se uma build falhar, o número pula; o app aceita isso, só o rótulo da versão antiga fica diferente).
+
+---
+
+## Como funciona
+
+```
+GitHub Actions: update-feed.yml (ciclos de ~5 h, uma coleta a cada 30 min)
+  backend/ (Python)
+    fetch.py     baixa os RSS (config/sources.yaml), limpa resumos, trata Google News
+    keywords.py  filtro "é notícia de guerra?" + tags de região (config/keywords.yaml)
+    cluster.py   agrupa a mesma história entre veículos e idiomas (PT↔EN), scores
+    analysis.py  números divergentes, enquadramento, tensão/anomalias, sagas, quem noticia primeiro
+    build.py     monta e grava tudo na branch gh-pages (1 commit, force-push)
+        │
+        ▼  raw.githubusercontent.com/AbuGDN/WID/gh-pages/*.json
+App Android (Kotlin + Jetpack Compose)                       build-android.yml → Releases (APK)
+  data/    Repository (baixa feed, traduz com ML Kit, texto completo com Readability4J),
+           Storage (JSON na pasta privada), Settings, Updater (Releases do GitHub), conteúdo fixo
+           (Context/Milestones/Conflicts/WhatsNew)
+  sync/    SyncWorker (30 min), DigestWorker (resumo diário/semanal), Notifier, ações de notificação
+  ui/      telas Compose (Hoje, Mapa, Arquivo, Salvos, notícia, região, ajustes...)
+  widget/  3 widgets Glance (principal, compacto, por região)
+```
+
+### Arquivos publicados na `gh-pages`
+
+| Arquivo | Conteúdo |
+|---|---|
+| `feed.json` | Histórias das últimas 48 h (grupos com todos os artigos), principal do dia, `regions` (tensão/anomalias) |
+| `top.json` | Principal do dia + 4 secundárias |
+| `history/AAAA-MM-DD.json`, `history/index.json` | Principal de cada dia |
+| `stats/daily.json` | Histórias iniciadas por dia e região (30 dias) |
+| `stats/first.json` | Ranking de quem publicou primeiro |
+| `sagas.json` | Estado das sagas (histórias ligadas entre dias) |
+| `sources_status.json` | Quais feeds funcionaram na última coleta |
+
+A `gh-pages` é **gerada**: nunca edite à mão (é recriada com force-push a cada coleta).
+
+---
+
+## Tarefas comuns
+
+| Quero… | Onde |
+|---|---|
+| Adicionar/remover um veículo | `backend/config/sources.yaml` (+ perfil em `SOURCE_PROFILES`, `data/Context.kt`) |
+| Ajustar o que conta como notícia de guerra ou uma região | `backend/config/keywords.yaml` (+ `TAG_LABELS` em `Models.kt`, ponto em `MapScreen.kt`) |
+| Mudar textos de contexto, pessoas, glossário | `android/.../data/Context.kt`, `Milestones.kt`, `Conflicts.kt` |
+| Forçar uma coleta agora | Actions → "Atualizar feed" → **Run workflow** |
+| Ver se os feeds estão ok | `sources_status.json` na `gh-pages` |
+
+---
+
+## Branches
+
+- `claude/adoring-hamilton-kr5stn` — todo o código. **Hoje é a branch padrão** do repositório, e o
+  agendamento (`schedule`) do GitHub só roda na branch padrão.
+- `gh-pages` — dados gerados (não mexer).
+
+Para usar `main` (recomendado):
+
+```bash
+git checkout -b main claude/adoring-hamilton-kr5stn
+git push -u origin main
+```
+
+Depois, em GitHub → Settings → General → **Default branch**, troque para `main`. A partir daí o
+agendamento roda na `main`. Os workflows rodam em push para qualquer branch (menos `gh-pages`), então
+nada mais precisa mudar.
+
+---
+
+## Custos e limites
+
+- Tudo grátis: repositório público = minutos de Actions ilimitados; GitHub Pages/raw grátis; tradução
+  ML Kit no aparelho; mapa OpenStreetMap.
+- O cron do GitHub atrasa em repositórios pequenos; por isso cada execução agendada fica ~5 h no ar
+  coletando a cada 30 min (ver comentário em `update-feed.yml`).
+- A chave de assinatura (`android/app/wid.jks`, senha `widnews`) está no repositório de propósito
+  (app pessoal; toda build instala por cima). Só quem tem escrita no repo publica releases.
