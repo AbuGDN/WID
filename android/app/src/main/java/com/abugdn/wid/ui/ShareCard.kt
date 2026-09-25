@@ -90,7 +90,7 @@ private fun drawCard(cluster: Cluster, title: String, photo: Bitmap?): Bitmap {
 
     val gold = 0xFFC9A227.toInt()
     val label = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = gold; textSize = 34f; typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f }
-    canvas.drawText("ARGOS · CEM OLHOS SOBRE A GUERRA", 60f, y, label)
+    canvas.drawText("ARGOS", 60f, y, label)
     y += 40f
 
     val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -119,14 +119,8 @@ private fun drawCard(cluster: Cluster, title: String, photo: Bitmap?): Bitmap {
         60f, y, meta,
     )
 
-    // Rodapé: o olho no triângulo + assinatura.
+    // Rodapé: só o olho no triângulo, o ícone do app.
     drawArgosEye(canvas, 100f, H - 96f, 80f, gold)
-    val brand = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = gold; textSize = 40f; typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD); letterSpacing = 0.25f
-    }
-    canvas.drawText("ARGOS", 160f, H - 92f, brand)
-    val footer = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF8A8578.toInt(); textSize = 28f }
-    canvas.drawText("Cem olhos sobre a guerra", 160f, H - 54f, footer)
     return bitmap
 }
 

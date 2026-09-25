@@ -11,6 +11,13 @@ data class ChangelogEntry(val versionCode: Long, val items: List<String>)
 
 val CHANGELOG = listOf(
     ChangelogEntry(
+        17,
+        listOf(
+            "🖼 Cartão de compartilhar mais limpo: só o nome ARGOS em cima e o ícone do olho embaixo, sem slogan.",
+            "🗞 O boletim semanal também perdeu o slogan do rodapé.",
+        ),
+    ),
+    ChangelogEntry(
         16,
         listOf(
             "🤝 Selo \"lados opostos\": quando a imprensa árabe e a israelense (ou americana) contam a mesma história. E ⚠ \"só um lado\" quando uma história grande saiu só de um lado.",

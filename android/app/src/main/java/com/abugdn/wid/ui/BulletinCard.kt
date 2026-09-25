@@ -119,6 +119,6 @@ fun drawBulletin(b: Bulletin, translator: Translator): Bitmap {
     // Rodapé.
     val footer = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = ASH; textSize = 28f; textAlign = Paint.Align.CENTER }
     val alerts = if (b.alerts == 1) "1 alerta registrado" else "${b.alerts} alertas registrados"
-    canvas.drawText("$alerts na semana · Cem olhos sobre a guerra", W / 2f, H - 62f, footer)
+    canvas.drawText("$alerts na semana", W / 2f, H - 62f, footer)
     return bitmap
 }
