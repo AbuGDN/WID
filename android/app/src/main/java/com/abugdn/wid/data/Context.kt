@@ -49,7 +49,7 @@ val ACTORS = listOf(
             "do Irã, não disputa eleições e costuma combater Israel ao lado do Hamas.",
     ),
     Actor(
-        "ap", "Autoridade Palestina", listOf("autoridade palestina", "palestinian authority", "fatah", "abbas"),
+        "ap", "Autoridade Palestina", listOf("autoridade palestina", "palestinian authority", "fatah"),
         "Governo palestino criado pelos Acordos de Oslo (1993–1995). Administra partes da Cisjordânia e é dominado pelo Fatah, " +
             "partido de Mahmoud Abbas. Perdeu Gaza para o Hamas em 2007. Coopera com Israel em segurança, o que é criticado por " +
             "muitos palestinos.",
@@ -170,10 +170,115 @@ val GLOSSARY = listOf(
     ),
 )
 
+/** Pessoas-chave. Texto fixo até 2025: cargos podem ter mudado depois. */
+val PEOPLE = listOf(
+    Actor(
+        "netanyahu", "Benjamin Netanyahu", listOf("netanyahu", "netanyahou"),
+        "Primeiro-ministro de Israel pelo Likud, o mais longevo da história do país (1996–1999, 2009–2021 e de novo desde o fim " +
+            "de 2022, com uma coalizão de partidos religiosos e de extrema direita). Comandou o país na guerra após o 7 de outubro. " +
+            "Responde a processos por corrupção em Israel e é alvo de mandado de prisão do Tribunal Penal Internacional (2024), " +
+            "que Israel não reconhece.",
+    ),
+    Actor(
+        "khamenei", "Ali Khamenei", listOf("khamenei", "khamanei"),
+        "Líder supremo do Irã desde 1989, a mais alta autoridade política e religiosa do país, acima do presidente eleito. " +
+            "Comanda as Forças Armadas e a Guarda Revolucionária e tem a palavra final sobre o programa nuclear.",
+    ),
+    Actor(
+        "pezeshkian", "Masoud Pezeshkian", listOf("pezeshkian"),
+        "Presidente do Irã desde julho de 2024, considerado reformista. Chefia o governo, mas as decisões de segurança e política " +
+            "externa cabem ao líder supremo.",
+    ),
+    Actor(
+        "trump", "Donald Trump", listOf("trump"),
+        "Presidente dos EUA pelo Partido Republicano (2017–2021 e desde janeiro de 2025). No primeiro mandato mudou a embaixada " +
+            "americana para Jerusalém e patrocinou os Acordos de Abraão; no segundo, ordenou o bombardeio de instalações nucleares " +
+            "do Irã (junho de 2025) e tentou mediar acordos em Gaza e na Ucrânia.",
+    ),
+    Actor(
+        "putin", "Vladimir Putin", listOf("putin", "poutine"),
+        "Presidente da Rússia, no poder desde 2000 (como presidente ou primeiro-ministro). Ordenou a anexação da Crimeia (2014) e " +
+            "a invasão da Ucrânia (2022). É alvo de mandado de prisão do Tribunal Penal Internacional pela deportação de crianças ucranianas.",
+    ),
+    Actor(
+        "zelensky", "Volodymyr Zelensky", listOf("zelensky", "zelenskyy", "zelenski"),
+        "Presidente da Ucrânia desde 2019, ex-ator e comediante. Lidera o país desde a invasão russa de 2022 e busca armas e " +
+            "garantias de segurança do Ocidente.",
+    ),
+    Actor(
+        "sinwar", "Yahya Sinwar", listOf("yahya sinwar", "sinwar"),
+        "Líder do Hamas em Gaza e mentor do ataque de 7 de outubro de 2023. Assumiu a chefia do grupo após a morte de Ismail " +
+            "Haniyeh e foi morto por tropas israelenses em Rafah em outubro de 2024. O irmão, Mohammed Sinwar, também comandante, " +
+            "foi dado como morto por Israel em 2025.",
+    ),
+    Actor(
+        "haniyeh", "Ismail Haniyeh", listOf("haniyeh", "haniya", "haniyé"),
+        "Chefe do escritório político do Hamas, baseado no Catar e peça central nas negociações de cessar-fogo. Foi morto em " +
+            "Teerã em julho de 2024, em ataque atribuído a Israel.",
+    ),
+    Actor(
+        "nasrallah", "Hassan Nasrallah", listOf("nasrallah"),
+        "Secretário-geral do Hezbollah de 1992 a 2024 e figura mais conhecida do grupo. Foi morto em um bombardeio israelense em " +
+            "Beirute em setembro de 2024 e sucedido por Naim Qassem.",
+    ),
+    Actor(
+        "qassem", "Naim Qassem", listOf("naim qassem", "naim kassem", "naim qasem"),
+        "Secretário-geral do Hezbollah desde outubro de 2024, antes vice de Hassan Nasrallah por mais de três décadas.",
+    ),
+    Actor(
+        "abbas", "Mahmoud Abbas", listOf("mahmoud abbas", "abu mazen"),
+        "Presidente da Autoridade Palestina e líder do Fatah desde 2005. Defende negociações e a solução de dois Estados; seu " +
+            "mandato nunca foi renovado em eleições, o que alimenta críticas entre palestinos.",
+    ),
+    Actor(
+        "sharaa", "Ahmed al-Sharaa", listOf("al-sharaa", "sharaa", "jolani", "julani"),
+        "Presidente de transição da Síria desde o início de 2025. Ex-comandante jihadista (conhecido como Abu Mohammed al-Jolani), " +
+            "liderou o grupo HTS na ofensiva que derrubou Bashar al-Assad em dezembro de 2024.",
+    ),
+)
+
+/** Perfil dos veículos: país, dono e linha editorial (avaliação aproximada). */
+val SOURCE_PROFILES = mapOf(
+    "Times of Israel" to "Israel · site independente em inglês, fundado em 2012. Linha centrista, muito usado por correspondentes estrangeiros.",
+    "Jerusalem Post" to "Israel · jornal em inglês fundado em 1932. Linha de centro-direita.",
+    "Ynetnews" to "Israel · edição em inglês do Ynet, do grupo Yedioth Ahronoth, o maior do país. Linha centrista e popular.",
+    "Israel Hayom" to "Israel · jornal gratuito criado em 2007 pelo bilionário americano Sheldon Adelson. Linha de direita, historicamente próximo de Netanyahu.",
+    "Al Jazeera" to "Catar · rede financiada pelo governo do Catar. Forte cobertura de Gaza e do mundo árabe; Israel proibiu suas operações no país em 2024.",
+    "Middle East Eye" to "Reino Unido · site sobre o Oriente Médio fundado em 2014. Crítico de Israel e dos governos do Golfo; críticos apontam proximidade com o Catar, o que o site nega.",
+    "BBC Middle East" to "Reino Unido · emissora pública britânica. Busca imparcialidade e recebe críticas dos dois lados do conflito.",
+    "BBC World" to "Reino Unido · emissora pública britânica. Busca imparcialidade e recebe críticas dos dois lados do conflito.",
+    "The Guardian" to "Reino Unido · jornal controlado por uma fundação (Scott Trust). Linha de centro-esquerda.",
+    "DW" to "Alemanha · emissora pública internacional financiada pelo governo alemão.",
+    "France 24" to "França · canal público internacional (France Médias Monde).",
+    "Kyiv Independent" to "Ucrânia · site em inglês fundado em 2021 por ex-jornalistas do Kyiv Post. Perspectiva ucraniana.",
+    "NYT World" to "EUA · The New York Times, jornal de referência. Reportagem factual; opinião de centro-esquerda.",
+    "NPR" to "EUA · rádio pública sem fins lucrativos. Conservadores a veem como de centro-esquerda.",
+    "CNN" to "EUA · canal de notícias 24 h da Warner Bros. Discovery. Linha de centro a centro-esquerda.",
+    "Fox News" to "EUA · canal da Fox Corporation (família Murdoch). Linha conservadora, próxima do Partido Republicano.",
+    "Washington Post" to "EUA · jornal de Washington, de Jeff Bezos desde 2013. Linha de centro a centro-esquerda.",
+    "Defense News" to "EUA · publicação especializada em defesa e indústria militar (Sightline Media).",
+    "G1" to "Brasil · portal de notícias do Grupo Globo.",
+    "Folha" to "Brasil · Folha de S.Paulo, do Grupo Folha. Linha pluralista, de centro.",
+    "BBC Brasil" to "Reino Unido · serviço em português da BBC.",
+    "DW Brasil" to "Alemanha · serviço em português da DW.",
+    "CNN Brasil" to "Brasil · canal brasileiro que licencia a marca CNN.",
+    "Estadão" to "Brasil · O Estado de S. Paulo, jornal tradicional. Linha liberal, de centro-direita.",
+    "RFI Brasil" to "França · serviço em português da Rádio França Internacional, pública.",
+    "Poder360" to "Brasil · jornal digital de Brasília focado em política e poder.",
+)
+
+const val SOURCE_DISCLAIMER = "Resumo geral; a linha editorial é uma avaliação aproximada."
+
 /** Atores e armas citados na notícia (título, resumo e tradução). */
 fun Cluster.actors(translated: (String) -> String): List<Actor> {
     val text = normalize("$title\n$summary\n${translated(title)}\n${translated(summary)}")
-    return (ACTORS + GLOSSARY).filter { actor ->
+    return (PEOPLE + ACTORS + GLOSSARY).filter { actor ->
         actor.terms.any { Regex("(?<![\\p{L}\\d])" + Regex.escape(normalize(it)) + "s?(?![\\p{L}\\d])").containsMatchIn(text) }
     }
 }
+
+/** Histórias do feed que citam o ator/pessoa (para "notícias recentes"). */
+fun Actor.related(clusters: List<Cluster>, translated: (String) -> String, exclude: String? = null): List<Cluster> =
+    clusters.filter { it.id != exclude && key in it.actors(translated).map { a -> a.key } }.take(5)
+
+fun isPerson(actor: Actor) = PEOPLE.any { it.key == actor.key }

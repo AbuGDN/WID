@@ -5,12 +5,16 @@ package com.abugdn.wid.data
  * A cada versão com novidades, troque [WHATS_NEW_ID] e a lista: o pop-up volta a
  * aparecer para todo mundo até cada um marcar "não mostrar de novo".
  */
-const val WHATS_NEW_ID = "2026-09-25-eua"
+const val WHATS_NEW_ID = "2026-09-25-pessoas"
 
 val WHATS_NEW_ITEMS = listOf(
-    "🇺🇸 Estados Unidos: nova região (filtro, mapa, tendência e notificações) e veículos americanos (NPR, CNN, Fox News, Washington Post, Defense News). \"Imprensa americana\" aparece em \"Como cada lado noticiou\".",
-    "▶ O dia em 1 minuto: as 5 principais do dia em cartões de tela cheia. Botão na tela Hoje.",
-    "🛡 Glossário militar: toque em chips como \"ⓘ Domo de Ferro\", \"ⓘ THAAD\" ou \"ⓘ Shahed\" na notícia.",
-    "📜 Marcos dos conflitos: o contexto de cada região agora traz uma linha do tempo histórica (também no ⓘ da lista do Mapa).",
-    "🧩 Widget por região: escolha uma região (ex.: só Israel ou só EUA) e veja a principal dela na tela inicial.",
+    "🗺 Mapa corrigido: não desenha mais por cima do resto da tela ao arrastar. Marcadores agora são círculos com o número de histórias.",
+    "🆕 Novo desde a sua leitura: notícias que você já leu mostram quantos veículos chegaram depois, marcados como NOVO.",
+    "👤 Pessoas: Netanyahu, Khamenei, Trump, Putin, Zelensky, líderes do Hamas e do Hezbollah e outros, com notícias recentes que os citam.",
+    "📰 Perfil dos veículos: toque no nome de um veículo (ⓘ) para ver país, dono e linha editorial.",
+    "🔔 Notificações com botões Salvar e Seguir.",
+    "📌 Atalhos: segure o ícone do WID para O dia em 1 minuto, Buscar e Salvos.",
+    "📶 Economia de dados (Ajustes): sem imagens e downloads grandes só no Wi-Fi.",
+    "📁 Pastas e notas nos Salvos: toque no cartão \"Salva\" dentro da notícia.",
+    "⚫ Tema preto AMOLED em Ajustes → Aparência.",
 )

@@ -22,6 +22,9 @@ class Translator(private val storage: Storage) {
     private val mutex = Mutex()
     @Volatile private var modelReady = false
 
+    /** Com a economia de dados ligada, o modelo (~30 MB) só baixa no Wi-Fi. */
+    @Volatile var wifiOnly = false
+
     /** Texto traduzido se já estiver em cache; senão, o original. */
     fun cached(text: String): String = storage.translations[text] ?: text
 
@@ -30,7 +33,8 @@ class Translator(private val storage: Storage) {
     private suspend fun ensureModel(): Boolean {
         if (modelReady) return true
         modelReady = runCatching {
-            client.downloadModelIfNeeded(DownloadConditions.Builder().build()).await()
+            val conditions = DownloadConditions.Builder().apply { if (wifiOnly) requireWifi() }.build()
+            client.downloadModelIfNeeded(conditions).await()
         }.isSuccess
         return modelReady
     }

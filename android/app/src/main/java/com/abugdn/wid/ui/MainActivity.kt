@@ -23,7 +23,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -38,6 +41,9 @@ import com.abugdn.wid.sync.SyncWorker
 
 const val EXTRA_CLUSTER_ID = "cluster_id"
 
+/** Atalhos do ícone do app (res/xml/shortcuts.xml): "story", "search" ou "saved". */
+const val EXTRA_SHORTCUT = "shortcut"
+
 /** As telas internas não aplicam insets do sistema: a barra de baixo é do Scaffold externo. */
 val NoInsets = WindowInsets(0, 0, 0, 0)
 
@@ -50,6 +56,7 @@ enum class Tab(val label: String, val icon: ImageVector) {
 
 class MainActivity : ComponentActivity() {
     private var openCluster by mutableStateOf<String?>(null)
+    private var shortcut by mutableStateOf<String?>(null)
 
     private val askNotifications =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -58,13 +65,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         openCluster = intent.getStringExtra(EXTRA_CLUSTER_ID)
+        shortcut = intent.getStringExtra(EXTRA_SHORTCUT)
         if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         if (savedInstanceState == null) SyncWorker.runNow(this)
 
         setContent {
             val settings by repository.settings.state.collectAsStateWithLifecycle()
             WidTheme(settings.theme, settings.textScale) {
-                App(openCluster = openCluster, onOpenCluster = { openCluster = it })
+                CompositionLocalProvider(LocalDataSaver provides settings.dataSaver) {
+                    App(
+                        openCluster = openCluster,
+                        onOpenCluster = { openCluster = it },
+                        shortcut = shortcut,
+                        onShortcutHandled = { shortcut = null },
+                    )
+                }
             }
         }
     }
@@ -82,11 +97,17 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.getStringExtra(EXTRA_CLUSTER_ID)?.let { openCluster = it }
+        intent.getStringExtra(EXTRA_SHORTCUT)?.let { openCluster = null; shortcut = it }
     }
 }
 
 @Composable
-private fun App(openCluster: String?, onOpenCluster: (String?) -> Unit) {
+private fun App(
+    openCluster: String?,
+    onOpenCluster: (String?) -> Unit,
+    shortcut: String?,
+    onShortcutHandled: () -> Unit,
+) {
     val repo = LocalContext.current.repository
     // Coletados para que a busca da notícia aberta se refaça quando os dados chegarem.
     val feed by repo.feed.collectAsStateWithLifecycle()
@@ -97,6 +118,16 @@ private fun App(openCluster: String?, onOpenCluster: (String?) -> Unit) {
     var tag by rememberSaveable { mutableStateOf<String?>(null) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     var storyOpen by rememberSaveable { mutableStateOf(false) }
+    var searchRequest by remember { mutableIntStateOf(0) }
+    LaunchedEffect(shortcut) {
+        when (shortcut) {
+            "story" -> storyOpen = true
+            "search" -> { settingsOpen = false; tab = Tab.HOME; searchRequest++ }
+            "saved" -> { settingsOpen = false; tab = Tab.SAVED }
+            else -> return@LaunchedEffect
+        }
+        onShortcutHandled()
+    }
     // Aparece a cada abertura até a pessoa marcar "não mostrar de novo".
     var whatsNewOpen by rememberSaveable { mutableStateOf(repo.shouldShowWhatsNew()) }
     if (whatsNewOpen) {
@@ -130,7 +161,7 @@ private fun App(openCluster: String?, onOpenCluster: (String?) -> Unit) {
                 openCluster != null -> {
                     BackHandler { onOpenCluster(null) }
                     if (detail != null) {
-                        DetailScreen(cluster = detail, onBack = { onOpenCluster(null) })
+                        DetailScreen(cluster = detail, onBack = { onOpenCluster(null) }, onOpen = { onOpenCluster(it) })
                     } else {
                         MissingScreen(onBack = { onOpenCluster(null) })
                     }
@@ -152,8 +183,9 @@ private fun App(openCluster: String?, onOpenCluster: (String?) -> Unit) {
                             onOpen = { onOpenCluster(it) },
                             onSettings = { settingsOpen = true },
                             onStory = { storyOpen = true },
+                            searchRequest = searchRequest,
                         )
-                        Tab.MAP -> MapScreen(onRegion = { tag = it; tab = Tab.HOME })
+                        Tab.MAP -> MapScreen(onRegion = { tag = it; tab = Tab.HOME }, onOpen = { onOpenCluster(it) })
                         Tab.ARCHIVE -> ArchiveScreen(onOpen = { onOpenCluster(it) })
                         Tab.SAVED -> SavedScreen(onOpen = { onOpenCluster(it) })
                     }

@@ -39,8 +39,19 @@ class Repository(context: Context) {
     val feed: StateFlow<Feed?> = _feed.asStateFlow()
 
     init {
-        settings.onChange = { _feed.value = applySourcePrefs(raw, it) }
+        translator.wifiOnly = settings.value.dataSaver
+        settings.onChange = {
+            _feed.value = applySourcePrefs(raw, it)
+            translator.wifiOnly = it.dataSaver
+        }
     }
+
+    private val _snapshots = MutableStateFlow(storage.loadSnapshots())
+    /** id da história -> ids dos artigos que ela tinha quando foi lida pela última vez. */
+    val snapshots: StateFlow<Map<String, Set<String>>> = _snapshots.asStateFlow()
+
+    private val _savedMeta = MutableStateFlow(storage.loadSavedMeta())
+    val savedMeta: StateFlow<Map<String, SavedMeta>> = _savedMeta.asStateFlow()
 
     private val _followed = MutableStateFlow(loadFollowed())
     /** id -> quantos veículos a história tinha na última vez que avisamos. */
@@ -58,6 +69,15 @@ class Repository(context: Context) {
     /** Horário da visita anterior: histórias que começaram depois disso são "novas". */
     var previousVisit: Long = storage.prefs.getLong("last_visit", 0)
         private set
+
+    /** Guarda quais veículos a história tinha agora, para marcar os que chegarem depois. */
+    fun markRead(cluster: Cluster) {
+        val keep = (_feed.value?.clusters.orEmpty() + _saved.value).map { it.id }.toSet() + cluster.id
+        val snaps = (_snapshots.value + (cluster.id to cluster.articles.map { it.id }.toSet())).filterKeys { it in keep }
+        storage.saveSnapshots(snaps)
+        _snapshots.value = snaps
+        markRead(cluster.id)
+    }
 
     fun markRead(id: String) {
         if (id in _read.value) return
@@ -169,7 +189,23 @@ class Repository(context: Context) {
         val next = if (list.any { it.id == cluster.id }) list.filter { it.id != cluster.id } else listOf(cluster) + list
         storage.saveSaved(next)
         _saved.value = next
+        if (next.none { it.id == cluster.id } && cluster.id in _savedMeta.value) {
+            saveMeta(_savedMeta.value - cluster.id)
+        }
     }
+
+    private fun saveMeta(meta: Map<String, SavedMeta>) {
+        storage.saveSavedMeta(meta)
+        _savedMeta.value = meta
+    }
+
+    /** Pasta (null = sem pasta) e nota de uma notícia salva. */
+    fun updateSavedMeta(id: String, folder: String?, note: String?) {
+        val clean = SavedMeta(folder?.trim()?.ifEmpty { null }, note?.trim()?.ifEmpty { null })
+        saveMeta(if (clean == SavedMeta()) _savedMeta.value - id else _savedMeta.value + (id to clean))
+    }
+
+    fun folders(): List<String> = _savedMeta.value.values.mapNotNull { it.folder }.distinct().sorted()
 
     /** Principal de cada um dos últimos [days] dias (history/ no servidor). */
     suspend fun loadArchive(days: Int = 60, publish: Boolean = true): Result<List<HistoryDay>> = withContext(Dispatchers.IO) {

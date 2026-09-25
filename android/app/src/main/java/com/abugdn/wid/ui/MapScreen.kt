@@ -1,6 +1,17 @@
 package com.abugdn.wid.ui
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas as AndroidCanvas
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.view.MotionEvent
+import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.widget.FrameLayout
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
@@ -52,12 +63,15 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 
-/** Posição aproximada de cada região no mapa (Gaza/Cisjordânia levemente afastadas de Israel). */
+/**
+ * Posição aproximada de cada região. Israel, Gaza, Cisjordânia e Líbano ficam afastados
+ * do ponto real para não se empilharem no zoom de região.
+ */
 private val REGION_POINTS = mapOf(
-    "israel" to GeoPoint(32.3, 34.95),
-    "gaza" to GeoPoint(31.35, 34.3),
-    "cisjordania" to GeoPoint(31.95, 35.35),
-    "libano" to GeoPoint(33.9, 35.8),
+    "israel" to GeoPoint(32.9, 34.6),
+    "gaza" to GeoPoint(30.7, 33.8),
+    "cisjordania" to GeoPoint(31.9, 36.4),
+    "libano" to GeoPoint(34.6, 36.3),
     "siria" to GeoPoint(35.0, 38.5),
     "iraque" to GeoPoint(33.2, 43.7),
     "ira" to GeoPoint(32.4, 53.7),
@@ -72,7 +86,7 @@ private val REGION_POINTS = mapOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapScreen(onRegion: (String) -> Unit) {
+fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
     val context = LocalContext.current
     val feed by context.repository.feed.collectAsStateWithLifecycle()
     val counts = remember(feed) {
@@ -91,6 +105,13 @@ fun MapScreen(onRegion: (String) -> Unit) {
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            // Sem mundo repetido nem área cinza fora do mapa.
+            isHorizontalMapRepetitionEnabled = false
+            isVerticalMapRepetitionEnabled = false
+            setScrollableAreaLimitLatitude(80.0, -60.0, 0)
+            minZoomLevel = 2.5
+            maxZoomLevel = 10.0
+            zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
             controller.setZoom(4.0)
             controller.setCenter(GeoPoint(30.0, 42.0))
             // Deixa o mapa receber arrastos sem a tela rolar junto.
@@ -107,7 +128,7 @@ fun MapScreen(onRegion: (String) -> Unit) {
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var contextTag by remember { mutableStateOf<String?>(null) }
-    contextTag?.let { RegionContextDialog(it) { contextTag = null } }
+    contextTag?.let { RegionContextDialog(it, onOpen) { contextTag = null } }
     Scaffold(
         contentWindowInsets = NoInsets,
         topBar = { TopAppBar(title = { Text(if (tab == 0) "Mapa · últimas 48 h" else "Tendência por região", fontWeight = FontWeight.Bold) }) },
@@ -120,17 +141,28 @@ fun MapScreen(onRegion: (String) -> Unit) {
             if (tab == 1) {
                 TrendBody(onRegion)
             } else {
+            // O MapView desenha fora dos próprios limites ao arrastar/dar zoom; a moldura com
+            // clipChildren e o clipToBounds impedem que ele pinte por cima do resto da tela.
             AndroidView(
-                factory = { mapView },
-                modifier = Modifier.fillMaxWidth().weight(0.6f),
-                update = { map ->
+                factory = { ctx ->
+                    (mapView.parent as? ViewGroup)?.removeView(mapView)
+                    FrameLayout(ctx).apply {
+                        clipChildren = true
+                        clipToPadding = true
+                        addView(mapView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().weight(0.6f).clipToBounds(),
+                update = { _ ->
+                    val map = mapView
                     map.overlays.removeAll { it is Marker }
                     counts.forEach { (tag, n) ->
                         val point = REGION_POINTS[tag] ?: return@forEach
                         map.overlays.add(Marker(map).apply {
                             position = point
                             title = "${TAG_LABELS.getValue(tag)} · $n"
-                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                            icon = countIcon(context, n)
+                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             setOnMarkerClickListener { m, _ ->
                                 if (m.isInfoWindowShown) onRegion(tag) else m.showInfoWindow()
                                 true
@@ -258,4 +290,29 @@ private fun TrendRow(label: String, values: List<Int>, highlight: Boolean, onCli
             }
         }
     }
+}
+
+/** Marcador: círculo vermelho com o número de histórias da região. */
+private fun countIcon(context: Context, count: Int): Drawable {
+    val density = context.resources.displayMetrics.density
+    val size = ((if (count >= 100) 40 else 34) * density).toInt()
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = AndroidCanvas(bitmap)
+    val r = size / 2f
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE53935.toInt() }
+    val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFFFFFFF.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 2.5f * density
+    }
+    canvas.drawCircle(r, r, r - 2 * density, fill)
+    canvas.drawCircle(r, r, r - 2 * density, stroke)
+    val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFFFFFFF.toInt()
+        textAlign = Paint.Align.CENTER
+        textSize = 13 * density
+        typeface = Typeface.DEFAULT_BOLD
+    }
+    canvas.drawText(count.toString(), r, r - (text.descent() + text.ascent()) / 2, text)
+    return BitmapDrawable(context.resources, bitmap)
 }

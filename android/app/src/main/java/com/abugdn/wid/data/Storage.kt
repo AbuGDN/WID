@@ -5,6 +5,7 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.SetSerializer
 import kotlinx.serialization.builtins.serializer
 
 /** Tudo fica em arquivos JSON na pasta privada do app: é pouco dado e só um usuário. */
@@ -13,6 +14,8 @@ class Storage(context: Context) {
     private val feedFile = File(dir, "feed.json")
     private val translationsFile = File(dir, "translations.json")
     private val savedFile = File(dir, "saved.json")
+    private val savedMetaFile = File(dir, "saved_meta.json")
+    private val snapshotsFile = File(dir, "read_snapshots.json")
     private val articlesDir = File(dir, "articles").apply { mkdirs() }
     val prefs = context.getSharedPreferences("wid", Context.MODE_PRIVATE)
 
@@ -49,6 +52,21 @@ class Storage(context: Context) {
 
     fun saveSaved(list: List<Cluster>) =
         writeAtomic(savedFile, json.encodeToString(ListSerializer(Cluster.serializer()), list))
+
+    fun loadSavedMeta(): Map<String, SavedMeta> = runCatching {
+        json.decodeFromString(MapSerializer(String.serializer(), SavedMeta.serializer()), savedMetaFile.readText())
+    }.getOrDefault(emptyMap())
+
+    fun saveSavedMeta(meta: Map<String, SavedMeta>) =
+        writeAtomic(savedMetaFile, json.encodeToString(MapSerializer(String.serializer(), SavedMeta.serializer()), meta))
+
+    /** Veículos (ids dos artigos) que cada história tinha na última leitura. */
+    fun loadSnapshots(): Map<String, Set<String>> = runCatching {
+        json.decodeFromString(MapSerializer(String.serializer(), SetSerializer(String.serializer())), snapshotsFile.readText())
+    }.getOrDefault(emptyMap())
+
+    fun saveSnapshots(map: Map<String, Set<String>>) =
+        writeAtomic(snapshotsFile, json.encodeToString(MapSerializer(String.serializer(), SetSerializer(String.serializer())), map))
 
     /** Apaga textos completos com mais de [maxAgeDays] dias, menos os das notícias salvas. */
     fun pruneFullTexts(keep: Set<String>, maxAgeDays: Int = 30) {

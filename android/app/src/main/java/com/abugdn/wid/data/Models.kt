@@ -45,6 +45,10 @@ data class ArticleRef(
     val origin: String = "internacional",
 )
 
+/** Pasta e nota pessoal de uma notícia salva. */
+@Serializable
+data class SavedMeta(val folder: String? = null, val note: String? = null)
+
 /** stats/daily.json: histórias iniciadas por dia e por região. */
 @Serializable
 data class DailyStats(val days: List<StatsDay> = emptyList())

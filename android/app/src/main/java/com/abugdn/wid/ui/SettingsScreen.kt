@@ -214,12 +214,20 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Text("Carregue as notícias primeiro.", modifier = Modifier.padding(horizontal = 16.dp))
             }
 
+            Section("Economia de dados")
+            Toggle(
+                "Economia de dados",
+                "Sem imagens; textos completos antecipados e o modelo de tradução só no Wi-Fi",
+                s.dataSaver,
+            ) { update { st -> st.copy(dataSaver = it) } }
+
             Section("Aparência")
             Chips(ThemeMode.entries, selected = { it == s.theme }, label = {
                 when (it) {
                     ThemeMode.SYSTEM -> "Igual ao sistema"
                     ThemeMode.LIGHT -> "Claro"
                     ThemeMode.DARK -> "Escuro"
+                    ThemeMode.AMOLED -> "Preto (AMOLED)"
                 }
             }) { update { st -> st.copy(theme = it) } }
             Text("Tamanho do texto", modifier = Modifier.padding(16.dp, 8.dp))

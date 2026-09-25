@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-enum class ThemeMode { SYSTEM, LIGHT, DARK }
+enum class ThemeMode { SYSTEM, LIGHT, DARK, AMOLED }
 
 data class Settings(
     val notifyUrgent: Boolean = true,
@@ -28,6 +28,8 @@ data class Settings(
     val hiddenSources: Set<String> = emptySet(),
     /** Veículos preferidos: dão o título do grupo e sobem no ranking. */
     val preferredSources: Set<String> = emptySet(),
+    /** Sem imagens; textos completos e modelo de tradução só no Wi-Fi. */
+    val dataSaver: Boolean = false,
 ) {
     fun matchesRegion(tags: List<String>) = regions.isEmpty() || tags.any { it in regions }
 
@@ -60,6 +62,7 @@ class SettingsStore(private val prefs: SharedPreferences) {
             .putBoolean("s_weekly", next.weeklyDigest)
             .putStringSet("s_hidden_sources", next.hiddenSources)
             .putStringSet("s_preferred_sources", next.preferredSources)
+            .putBoolean("s_data_saver", next.dataSaver)
             .apply()
         _state.value = next
         onChange?.invoke(next)
@@ -83,6 +86,7 @@ class SettingsStore(private val prefs: SharedPreferences) {
         weeklyDigest = prefs.getBoolean("s_weekly", true),
         hiddenSources = prefs.getStringSet("s_hidden_sources", emptySet())!!.toSet(),
         preferredSources = prefs.getStringSet("s_preferred_sources", emptySet())!!.toSet(),
+        dataSaver = prefs.getBoolean("s_data_saver", false),
     )
 }
 

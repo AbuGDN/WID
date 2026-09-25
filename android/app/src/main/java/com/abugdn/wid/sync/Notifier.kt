@@ -197,6 +197,8 @@ object Notifier {
         val pending = openIntent(context, cluster.id)
         val notification = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_notification)
+            .addAction(R.drawable.ic_notification, "Salvar", NotificationActionReceiver.intent(context, ACTION_SAVE, cluster.id))
+            .addAction(R.drawable.ic_notification, "Seguir", NotificationActionReceiver.intent(context, ACTION_FOLLOW, cluster.id))
             .setContentTitle("$label · ${cluster.sourcesCount} veículos")
             .setContentText(title)
             .setStyle(NotificationCompat.BigTextStyle().bigText(title))

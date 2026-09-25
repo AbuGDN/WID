@@ -37,6 +37,11 @@ import com.abugdn.wid.data.ORIGIN_LABELS
 import com.abugdn.wid.data.REGION_CONTEXT
 import com.abugdn.wid.data.TAG_LABELS
 import com.abugdn.wid.data.actors
+import com.abugdn.wid.data.isPerson
+import com.abugdn.wid.data.SavedMeta
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -77,7 +82,7 @@ private sealed interface TextState {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
+fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit) {
     val context = LocalContext.current
     val repo = context.repository
     val saved by repo.saved.collectAsStateWithLifecycle()
@@ -91,13 +96,19 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
         value = repo.fullText(cluster).fold({ TextState.Ready(it) }, { TextState.Failed })
     }
     val title = translator.display(cluster.title, cluster.lang)
-    LaunchedEffect(cluster.id) { repo.markRead(cluster.id) }
+    // Veículos que a história tinha na leitura anterior (antes de marcar a leitura de agora).
+    val previousSnapshot = remember(cluster.id) { repo.snapshots.value[cluster.id] }
+    val newIds = previousSnapshot?.let { snap -> cluster.articles.map { it.id }.filter { it !in snap }.toSet() }.orEmpty()
+    val newSources = cluster.articles.filter { it.id in newIds }.map { it.source }.distinct()
+    LaunchedEffect(cluster.id) { repo.markRead(cluster) }
+    var profileOf by remember { mutableStateOf<String?>(null) }
+    profileOf?.let { SourceProfileDialog(it) { profileOf = null } }
 
     Scaffold(
         contentWindowInsets = NoInsets,
         topBar = {
             TopAppBar(
-                title = { Text(cluster.source) },
+                title = { Text(cluster.source, modifier = Modifier.clickable { profileOf = cluster.source }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
@@ -128,7 +139,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
         Column(
             Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()),
         ) {
-            cluster.image?.let {
+            cluster.image?.takeUnless { LocalDataSaver.current }?.let {
                 AsyncImage(
                     model = it,
                     contentDescription = null,
@@ -151,7 +162,18 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
-                ContextChips(cluster)
+                if (newSources.isNotEmpty()) {
+                    Text(
+                        "+${newSources.size} ${if (newSources.size == 1) "veículo" else "veículos"} desde que você leu: " +
+                            newSources.joinToString(", "),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Red,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+                ContextChips(cluster, onOpen)
+                if (isSaved) SavedMetaSection(cluster.id)
                 Spacer(Modifier.height(16.dp))
 
                 when (val state = textState) {
@@ -194,7 +216,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
                     Text("Abrir no site (${cluster.source})")
                 }
 
-                Perspectives(cluster)
+                Perspectives(cluster, newIds) { profileOf = it }
 
                 if (cluster.articles.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))
@@ -202,7 +224,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
                     Spacer(Modifier.height(8.dp))
                     val ordered = cluster.articles.sortedBy { it.published }
                     ordered.forEachIndexed { i, a ->
-                        TimelineItem(a, first = i == 0, last = i == ordered.lastIndex) { openUrl(context, a.url) }
+                        TimelineItem(a, first = i == 0, last = i == ordered.lastIndex, isNew = a.id in newIds) { openUrl(context, a.url) }
                     }
                 }
             }
@@ -213,7 +235,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit) {
 /** Chips "ⓘ Hamas", "ⓘ Gaza"… que abrem um cartão de contexto. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ContextChips(cluster: Cluster) {
+private fun ContextChips(cluster: Cluster, onOpen: (String) -> Unit) {
     val translator = LocalContext.current.repository.translator
     val actors = remember(cluster.id) { cluster.actors(translator::cached) }
     val regions = cluster.tags.filter { it in REGION_CONTEXT }
@@ -223,19 +245,19 @@ private fun ContextChips(cluster: Cluster) {
 
     FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         actors.forEach { a ->
-            AssistChip(onClick = { openActor = a }, label = { Text("ⓘ ${a.name}") })
+            AssistChip(onClick = { openActor = a }, label = { Text((if (isPerson(a)) "👤 " else "ⓘ ") + a.name) })
         }
         regions.forEach { tag ->
             AssistChip(onClick = { openRegion = tag }, label = { Text("ⓘ ${TAG_LABELS[tag] ?: tag}") })
         }
     }
-    openActor?.let { a -> ContextDialog(a.name, a.text, null) { openActor = null } }
-    openRegion?.let { tag -> RegionContextDialog(tag) { openRegion = null } }
+    openActor?.let { a -> ActorContextDialog(a, onOpen, exclude = cluster.id) { openActor = null } }
+    openRegion?.let { tag -> RegionContextDialog(tag, onOpen, exclude = cluster.id) { openRegion = null } }
 }
 
 /** "Como cada lado noticiou": títulos agrupados pela origem do veículo. */
 @Composable
-private fun Perspectives(cluster: Cluster) {
+private fun Perspectives(cluster: Cluster, newIds: Set<String>, onProfile: (String) -> Unit) {
     val translator = LocalContext.current.repository.translator
     val context = LocalContext.current
     val groups = ORIGIN_LABELS.keys.associateWith { origin -> cluster.articles.filter { it.origin == origin } }
@@ -255,11 +277,90 @@ private fun Perspectives(cluster: Cluster) {
                 articles.distinctBy { it.source }.forEach { a ->
                     Column(Modifier.fillMaxWidth().clickable { openUrl(context, a.url) }.padding(vertical = 6.dp)) {
                         Text(translator.display(a.title, a.lang), style = MaterialTheme.typography.bodyMedium)
-                        Text(a.source, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "ⓘ ${a.source}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.clickable { onProfile(a.source) }.padding(vertical = 4.dp),
+                            )
+                            if (a.id in newIds) {
+                                Text("  NOVO", style = MaterialTheme.typography.labelSmall, color = Red, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/** Pasta e nota pessoal de uma notícia salva, com edição num diálogo. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SavedMetaSection(id: String) {
+    val repo = LocalContext.current.repository
+    val allMeta by repo.savedMeta.collectAsStateWithLifecycle()
+    val meta = allMeta[id] ?: SavedMeta()
+    var editing by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp).clickable { editing = true },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text(
+                "SALVA" + (meta.folder?.let { " · PASTA: ${it.uppercase()}" } ?: ""),
+                style = MaterialTheme.typography.labelSmall,
+                color = Red,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                meta.note ?: "Toque para escolher uma pasta ou escrever uma nota.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (meta.note == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+
+    if (editing) {
+        var folder by remember { mutableStateOf(meta.folder.orEmpty()) }
+        var note by remember { mutableStateOf(meta.note.orEmpty()) }
+        val folders = remember { repo.folders() }
+        AlertDialog(
+            onDismissRequest = { editing = false },
+            confirmButton = {
+                TextButton(onClick = { repo.updateSavedMeta(id, folder, note); editing = false }) { Text("Salvar") }
+            },
+            dismissButton = { TextButton(onClick = { editing = false }) { Text("Cancelar") } },
+            title = { Text("Pasta e nota") },
+            text = {
+                Column {
+                    if (folders.isNotEmpty()) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            folders.forEach { f ->
+                                FilterChip(selected = folder == f, onClick = { folder = if (folder == f) "" else f }, label = { Text(f) })
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = folder,
+                        onValueChange = { folder = it },
+                        label = { Text("Pasta (ex.: Irã nuclear)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = note,
+                        onValueChange = { note = it },
+                        label = { Text("Nota pessoal") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+        )
     }
 }
 
@@ -275,7 +376,7 @@ private fun Summary(cluster: Cluster) {
 
 /** Um ponto na linha do tempo: horário, veículo e título, ligados por uma linha vertical. */
 @Composable
-private fun TimelineItem(a: ArticleRef, first: Boolean, last: Boolean, onClick: () -> Unit) {
+private fun TimelineItem(a: ArticleRef, first: Boolean, last: Boolean, isNew: Boolean, onClick: () -> Unit) {
     val translator = LocalContext.current.repository.translator
     val line = MaterialTheme.colorScheme.outlineVariant
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = onClick)) {
@@ -288,9 +389,10 @@ private fun TimelineItem(a: ArticleRef, first: Boolean, last: Boolean, onClick: 
         }
         Column(Modifier.padding(start = 8.dp, top = 8.dp, bottom = 12.dp)) {
             Text(
-                "${dayClock(a.published)} · ${a.source}" + if (first) " · primeiro a noticiar" else "",
+                "${dayClock(a.published)} · ${a.source}" + (if (first) " · primeiro a noticiar" else "") +
+                    if (isNew) " · NOVO desde sua leitura" else "",
                 style = MaterialTheme.typography.labelSmall,
-                color = if (first) Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (first || isNew) Red else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(translator.display(a.title, a.lang), style = MaterialTheme.typography.bodyMedium)
         }

@@ -1,6 +1,7 @@
 package com.abugdn.wid.sync
 
 import android.content.Context
+import android.net.ConnectivityManager
 import androidx.glance.appwidget.updateAll
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -30,7 +31,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         TopWidget().updateAll(applicationContext)
         CompactWidget().updateAll(applicationContext)
         RegionWidget().updateAll(applicationContext)
-        runCatching { repo.prefetch(feed) }
+        // Com economia de dados, textos completos antecipados só fora da rede móvel.
+        val metered = applicationContext.getSystemService(ConnectivityManager::class.java).isActiveNetworkMetered
+        if (!repo.settings.value.dataSaver || !metered) runCatching { repo.prefetch(feed) }
         repo.updater.check().getOrNull()?.let { update ->
             if (repo.updater.shouldNotify(update)) Notifier.update(applicationContext, update)
         }

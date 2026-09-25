@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Atalhos ao segurar o ícone do app. MainActivity lê o extra "shortcut". -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="story"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_story"
+        android:shortcutShortLabel="@string/shortcut_story">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.abugdn.wid"
+            android:targetClass="com.abugdn.wid.ui.MainActivity">
+            <extra android:name="shortcut" android:value="story" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="search"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_search"
+        android:shortcutShortLabel="@string/shortcut_search">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.abugdn.wid"
+            android:targetClass="com.abugdn.wid.ui.MainActivity">
+            <extra android:name="shortcut" android:value="search" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="saved"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_saved"
+        android:shortcutShortLabel="@string/shortcut_saved">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.abugdn.wid"
+            android:targetClass="com.abugdn.wid.ui.MainActivity">
+            <extra android:name="shortcut" android:value="saved" />
+        </intent>
+    </shortcut>
+</shortcuts>

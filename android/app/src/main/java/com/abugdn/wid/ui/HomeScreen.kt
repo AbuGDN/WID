@@ -72,6 +72,7 @@ fun HomeScreen(
     onOpen: (String) -> Unit,
     onSettings: () -> Unit,
     onStory: () -> Unit,
+    searchRequest: Int = 0,
 ) {
     val context = LocalContext.current
     val repo = context.repository
@@ -87,6 +88,8 @@ fun HomeScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
+    // Atalho "Buscar" do ícone do app.
+    LaunchedEffect(searchRequest) { if (searchRequest > 0) searchOpen = true }
     val saved by repo.saved.collectAsStateWithLifecycle()
     val readIds by repo.read.collectAsStateWithLifecycle()
 
@@ -258,7 +261,7 @@ private fun TopCard(c: Cluster, onOpen: (String) -> Unit) {
         modifier = Modifier.padding(16.dp).fillMaxWidth().clickable { onOpen(c.id) },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        c.image?.let {
+        c.image?.takeUnless { LocalDataSaver.current }?.let {
             AsyncImage(
                 model = it,
                 contentDescription = null,
@@ -293,12 +296,18 @@ fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
     val readIds by repo.read.collectAsStateWithLifecycle()
     val isRead = c.id in readIds
     val isNew = !isRead && isNewSinceLastVisit(c, repo.previousVisit)
+    val snapshots by repo.snapshots.collectAsStateWithLifecycle()
+    val addedSinceRead = if (isRead) newSinceRead(c, snapshots[c.id]) else 0
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onOpen(c.id) }.padding(16.dp, 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            val badges = listOfNotNull("URGENTE".takeIf { c.urgent }, "NOVA".takeIf { isNew })
+            val badges = listOfNotNull(
+                "URGENTE".takeIf { c.urgent },
+                "NOVA".takeIf { isNew },
+                "+$addedSinceRead DESDE SUA LEITURA".takeIf { addedSinceRead > 0 },
+            )
             if (badges.isNotEmpty()) {
                 Text(badges.joinToString(" · "), color = Red, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
@@ -313,7 +322,7 @@ fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
             Spacer(Modifier.height(4.dp))
             Meta(c)
         }
-        c.image?.let {
+        c.image?.takeUnless { LocalDataSaver.current }?.let {
             AsyncImage(
                 model = it,
                 contentDescription = null,
@@ -357,3 +366,7 @@ fun search(clusters: List<Cluster>, query: String, translated: (String) -> Strin
         terms.all { it in text }
     }.sortedByDescending { it.updated }
 }
+
+/** Quantos veículos entraram na história depois da última vez que ela foi lida. */
+fun newSinceRead(c: Cluster, snapshot: Set<String>?): Int =
+    if (snapshot == null) 0 else c.articles.map { it.source to it.id }.filter { it.second !in snapshot }.map { it.first }.distinct().size
