@@ -131,7 +131,7 @@ val GLOSSARY = listOf(
     ),
     Actor(
         "shahed", "Drones Shahed", listOf("shahed", "geran"),
-        "Drones de ataque iranianos de baixo custo, que voam até o alvo e explodem ("drones kamikaze"). A Rússia os usa em " +
+        "Drones de ataque iranianos de baixo custo, que voam até o alvo e explodem (“drones kamikaze”). A Rússia os usa em " +
             "massa contra a Ucrânia (fabricados localmente como Geran-2), e o Irã e os Houthis contra Israel e navios.",
     ),
     Actor(
@@ -165,7 +165,7 @@ val GLOSSARY = listOf(
     ),
     Actor(
         "f35", "F-35", listOf("f-35", "f35"),
-        "Caça furtivo americano de quinta geração, usado por Israel (versão F-35I "Adir") e por vários aliados. Teve papel " +
+        "Caça furtivo americano de quinta geração, usado por Israel (versão F-35I “Adir”) e por vários aliados. Teve papel " +
             "central nos ataques israelenses ao Irã.",
     ),
 )
