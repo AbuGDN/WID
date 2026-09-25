@@ -76,6 +76,7 @@ class Repository(context: Context) {
         val snaps = (_snapshots.value + (cluster.id to cluster.articles.map { it.id }.toSet())).filterKeys { it in keep }
         storage.saveSnapshots(snaps)
         _snapshots.value = snaps
+        logRead(cluster)
         markRead(cluster.id)
     }
 
@@ -174,11 +175,37 @@ class Repository(context: Context) {
         }
     }
 
-    fun shouldShowWhatsNew() = storage.prefs.getString("whats_new_dismissed", null) != WHATS_NEW_ID
+    /** Última versão cujas novidades a pessoa confirmou com "não mostrar de novo". */
+    private fun changelogSeen(): Long {
+        val prefs = storage.prefs
+        if (prefs.contains("changelog_seen")) return prefs.getLong("changelog_seen", 0)
+        // Quem confirmou o aviso antigo (antes do histórico) continua de onde parou.
+        LEGACY_WHATS_NEW_IDS[prefs.getString("whats_new_dismissed", null)]?.let { return it }
+        // Instalação nova (ou vinda de antes do aviso existir): só a versão atual.
+        return (CHANGELOG.firstOrNull { it.versionCode <= updater.installedCode }?.versionCode ?: 0) - 1
+    }
+
+    /** Novidades pendentes, da versão mais nova para a mais antiga. */
+    fun pendingChangelog(): List<ChangelogEntry> {
+        val seen = changelogSeen()
+        return CHANGELOG.filter { it.versionCode > seen && it.versionCode <= updater.installedCode }
+    }
 
     /** "Não mostrar de novo até a próxima atualização". */
     fun dismissWhatsNew() {
-        storage.prefs.edit().putString("whats_new_dismissed", WHATS_NEW_ID).apply()
+        storage.prefs.edit().putLong("changelog_seen", updater.installedCode).apply()
+    }
+
+    /** Registro de leituras (últimos 30 dias) para o "Sua semana". */
+    private val _readLog = MutableStateFlow(storage.loadReadLog())
+    val readLog: StateFlow<List<ReadEvent>> = _readLog.asStateFlow()
+
+    private fun logRead(cluster: Cluster) {
+        val today = java.time.LocalDate.now().toEpochDay()
+        if (_readLog.value.any { it.id == cluster.id && it.day == today }) return
+        val next = (_readLog.value + ReadEvent(today, cluster.id, cluster.tags)).filter { it.day > today - 30 }
+        storage.saveReadLog(next)
+        _readLog.value = next
     }
 
     fun isSaved(id: String) = _saved.value.any { it.id == id }

@@ -142,9 +142,7 @@ fun StoryScreen(onClose: () -> Unit, onOpen: (String) -> Unit) {
 private fun StoryPage(cluster: Cluster, index: Int, total: Int, modifier: Modifier) {
     val translator = LocalContext.current.repository.translator
     Box(modifier.fillMaxSize()) {
-        cluster.image?.takeUnless { LocalDataSaver.current }?.let {
-            AsyncImage(model = it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        }
+        NewsImage(cluster, Modifier.fillMaxSize(), revealable = false)
         Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.55f), 0.35f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.95f))

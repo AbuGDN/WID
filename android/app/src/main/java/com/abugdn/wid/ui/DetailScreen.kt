@@ -33,6 +33,8 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import com.abugdn.wid.data.ORIGIN_LABELS
 import com.abugdn.wid.data.REGION_CONTEXT
 import com.abugdn.wid.data.TAG_LABELS
@@ -40,6 +42,9 @@ import com.abugdn.wid.data.actors
 import com.abugdn.wid.data.isPerson
 import com.abugdn.wid.data.SavedMeta
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material.icons.filled.Star
@@ -82,7 +87,7 @@ private sealed interface TextState {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit) {
+fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit, onRegion: (String) -> Unit) {
     val context = LocalContext.current
     val repo = context.repository
     val saved by repo.saved.collectAsStateWithLifecycle()
@@ -129,8 +134,22 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit)
                             tint = if (isSaved) Red else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    IconButton(onClick = { share(context, title, cluster.url) }) {
-                        Icon(Icons.Filled.Share, contentDescription = "Compartilhar")
+                    Box {
+                        var shareMenu by remember { mutableStateOf(false) }
+                        val scope = rememberCoroutineScope()
+                        IconButton(onClick = { shareMenu = true }) {
+                            Icon(Icons.Filled.Share, contentDescription = "Compartilhar")
+                        }
+                        DropdownMenu(expanded = shareMenu, onDismissRequest = { shareMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Compartilhar link") },
+                                onClick = { shareMenu = false; share(context, title, cluster.url) },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Compartilhar como imagem") },
+                                onClick = { shareMenu = false; scope.launch { shareAsImage(context, cluster) } },
+                            )
+                        }
                     }
                 },
             )
@@ -139,14 +158,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit)
         Column(
             Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()),
         ) {
-            cluster.image?.takeUnless { LocalDataSaver.current }?.let {
-                AsyncImage(
-                    model = it,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
-                )
-            }
+            NewsImage(cluster, Modifier.fillMaxWidth().aspectRatio(16f / 9f))
             Column(Modifier.padding(16.dp)) {
                 if (cluster.urgent) {
                     Text("URGENTE", color = Red, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
@@ -172,7 +184,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit)
                         modifier = Modifier.padding(top = 6.dp),
                     )
                 }
-                ContextChips(cluster, onOpen)
+                ContextChips(cluster, onOpen, onRegion)
                 if (isSaved) SavedMetaSection(cluster.id)
                 Spacer(Modifier.height(16.dp))
 
@@ -196,18 +208,34 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit)
                         val text = state.text
                         val translated = text.translated
                         val paragraphs = if (translated != null && !showOriginal) translated else text.paragraphs
+                        // ~200 palavras por minuto.
+                        val minutes = (paragraphs.sumOf { p -> p.split(' ').size } / 200).coerceAtLeast(1)
                         Text(
-                            "Texto: ${text.source}" + if (translated != null) " · traduzido automaticamente" else "",
+                            "Texto: ${text.source} · ~$minutes min de leitura" +
+                                if (translated != null) " · traduzido automaticamente" else "",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        if (translated != null) {
-                            TextButton(onClick = { showOriginal = !showOriginal }) {
-                                Text(if (showOriginal) "Ver tradução" else "Ver original")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (translated != null) {
+                                TextButton(onClick = { showOriginal = !showOriginal }) {
+                                    Text(if (showOriginal) "Ver tradução" else "Ver original")
+                                }
                             }
+                            ReaderMenu()
                         }
+                        val settings by repo.settings.state.collectAsStateWithLifecycle()
+                        val base = MaterialTheme.typography.bodyLarge
+                        val readerStyle = base.copy(
+                            fontFamily = if (settings.readerSerif) FontFamily.Serif else base.fontFamily,
+                            lineHeight = if (settings.readerWide) base.fontSize * 1.75f else base.lineHeight,
+                        )
                         paragraphs.forEach {
-                            Text(it, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(bottom = 12.dp))
+                            Text(
+                                it,
+                                style = readerStyle,
+                                modifier = Modifier.padding(bottom = if (settings.readerWide) 18.dp else 12.dp),
+                            )
                         }
                     }
                 }
@@ -235,7 +263,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit)
 /** Chips "ⓘ Hamas", "ⓘ Gaza"… que abrem um cartão de contexto. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ContextChips(cluster: Cluster, onOpen: (String) -> Unit) {
+private fun ContextChips(cluster: Cluster, onOpen: (String) -> Unit, onRegion: (String) -> Unit) {
     val translator = LocalContext.current.repository.translator
     val actors = remember(cluster.id) { cluster.actors(translator::cached) }
     val regions = cluster.tags.filter { it in REGION_CONTEXT }
@@ -248,7 +276,7 @@ private fun ContextChips(cluster: Cluster, onOpen: (String) -> Unit) {
             AssistChip(onClick = { openActor = a }, label = { Text((if (isPerson(a)) "👤 " else "ⓘ ") + a.name) })
         }
         regions.forEach { tag ->
-            AssistChip(onClick = { openRegion = tag }, label = { Text("ⓘ ${TAG_LABELS[tag] ?: tag}") })
+            AssistChip(onClick = { onRegion(tag) }, label = { Text("🌍 ${TAG_LABELS[tag] ?: tag}") })
         }
     }
     openActor?.let { a -> ActorContextDialog(a, onOpen, exclude = cluster.id) { openActor = null } }
@@ -291,6 +319,27 @@ private fun Perspectives(cluster: Cluster, newIds: Set<String>, onProfile: (Stri
                     }
                 }
             }
+        }
+    }
+}
+
+/** Botão "Aa": fonte serifada e espaçamento amplo no texto completo. */
+@Composable
+private fun ReaderMenu() {
+    val store = LocalContext.current.repository.settings
+    val s by store.state.collectAsStateWithLifecycle()
+    var open by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { open = true }) { Text("Aa", fontWeight = FontWeight.Bold) }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text((if (s.readerSerif) "✓ " else "") + "Fonte serifada") },
+                onClick = { store.update { it.copy(readerSerif = !it.readerSerif) } },
+            )
+            DropdownMenuItem(
+                text = { Text((if (s.readerWide) "✓ " else "") + "Espaçamento amplo") },
+                onClick = { store.update { it.copy(readerWide = !it.readerWide) } },
+            )
         }
     }
 }

@@ -187,7 +187,7 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
                         Text(TAG_LABELS.getValue(tag), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                         Text(if (n == 1) "1 história" else "$n histórias", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (tag in REGION_CONTEXT) {
-                            IconButton(onClick = { contextTag = tag }) {
+                            IconButton(onClick = { onRegion(tag) }) {
                                 Icon(Icons.Filled.Info, contentDescription = "Contexto de ${TAG_LABELS.getValue(tag)}")
                             }
                         } else {
@@ -246,7 +246,7 @@ private fun TrendBody(onRegion: (String) -> Unit) {
 }
 
 @Composable
-private fun TrendRow(label: String, values: List<Int>, highlight: Boolean, onClick: (() -> Unit)?) {
+fun TrendRow(label: String, values: List<Int>, highlight: Boolean, onClick: (() -> Unit)?) {
     val last = values.takeLast(7).sum()
     val prev = values.dropLast(7).takeLast(7).sum()
     val change = when {

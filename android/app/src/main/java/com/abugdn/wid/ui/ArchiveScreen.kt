@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import com.abugdn.wid.data.TAG_LABELS
 import com.abugdn.wid.data.weekTop
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -61,6 +62,7 @@ fun ArchiveScreen(onOpen: (String) -> Unit) {
                 if (archive.isNullOrEmpty() && !loading) {
                     item { Text("Nada no arquivo ainda. O servidor guarda um dia por vez a partir de 24/09/2026.", modifier = Modifier.padding(24.dp)) }
                 }
+                item { YourWeekCard(onOpen) }
                 val week = weekTop(archive.orEmpty())
                 if (week.size >= 2) {
                     item {
@@ -100,6 +102,62 @@ fun ArchiveScreen(onOpen: (String) -> Unit) {
                         ClusterRow(day.top, onOpen)
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     }
+                }
+            }
+        }
+    }
+}
+
+/** "Sua semana": leituras dos últimos 7 dias, regiões mais lidas e histórias seguidas ativas. */
+@Composable
+private fun YourWeekCard(onOpen: (String) -> Unit) {
+    val repo = LocalContext.current.repository
+    val log by repo.readLog.collectAsStateWithLifecycle()
+    val followed by repo.followed.collectAsStateWithLifecycle()
+    val feed by repo.feed.collectAsStateWithLifecycle()
+    val since = java.time.LocalDate.now().toEpochDay() - 6
+    val week = log.filter { it.day >= since }
+    val stories = week.map { it.id }.distinct().size
+    val topRegions = week.distinctBy { it.id }.flatMap { it.tags }
+        .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.take(3)
+    val activeFollowed = feed?.clusters.orEmpty().filter { it.id in followed }
+
+    Card(
+        modifier = Modifier.padding(16.dp, 8.dp).fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text("SUA SEMANA", style = MaterialTheme.typography.labelMedium, color = Red, fontWeight = FontWeight.Bold)
+            Text(
+                when (stories) {
+                    0 -> "Você ainda não leu nenhuma notícia nos últimos 7 dias."
+                    1 -> "Você leu 1 história nos últimos 7 dias."
+                    else -> "Você leu $stories histórias nos últimos 7 dias."
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            if (topRegions.isNotEmpty()) {
+                Text(
+                    "Mais acompanhadas: " + topRegions.joinToString(", ") { (tag, n) -> "${TAG_LABELS[tag] ?: tag} ($n)" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            if (activeFollowed.isNotEmpty()) {
+                Text(
+                    "Seguindo (${activeFollowed.size} ativas):",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                activeFollowed.take(3).forEach { c ->
+                    Text(
+                        "• " + repo.translator.display(c.title, c.lang) + " (${c.sourcesCount} veículos)",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.fillMaxWidth().clickable { onOpen(c.id) }.padding(vertical = 4.dp),
+                    )
                 }
             }
         }

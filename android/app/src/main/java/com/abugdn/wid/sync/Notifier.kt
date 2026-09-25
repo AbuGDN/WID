@@ -33,6 +33,9 @@ object Notifier {
     private const val CHANNEL_WATCH = "watch"
     private const val CHANNEL_FOLLOW = "follow"
     private const val WEEKLY_ID = 8_002
+    private const val SUMMARY_ID = 8_003
+    /** Todas as notícias ficam num grupo só na barra de notificações. */
+    private const val GROUP = "com.abugdn.wid.NEWS"
     private const val UPDATE_ID = 8_001
     private const val TOP_MIN_INTERVAL_MS = 4 * 60 * 60 * 1000L
 
@@ -197,6 +200,7 @@ object Notifier {
         val pending = openIntent(context, cluster.id)
         val notification = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_notification)
+            .setGroup(GROUP)
             .addAction(R.drawable.ic_notification, "Salvar", NotificationActionReceiver.intent(context, ACTION_SAVE, cluster.id))
             .addAction(R.drawable.ic_notification, "Seguir", NotificationActionReceiver.intent(context, ACTION_FOLLOW, cluster.id))
             .setContentTitle("$label · ${cluster.sourcesCount} veículos")
@@ -205,6 +209,20 @@ object Notifier {
             .setContentIntent(pending)
             .setAutoCancel(true)
             .build()
-        NotificationManagerCompat.from(context).notify(cluster.id.hashCode(), notification)
+        val manager = NotificationManagerCompat.from(context)
+        manager.notify(cluster.id.hashCode(), notification)
+        // Resumo do grupo: silencioso, só junta as notificações acima.
+        val summary = NotificationCompat.Builder(context, channel)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("WID")
+            .setContentText("Novas notícias")
+            .setStyle(NotificationCompat.InboxStyle().setSummaryText("notícias de guerra"))
+            .setGroup(GROUP)
+            .setGroupSummary(true)
+            .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+            .setSilent(true)
+            .setAutoCancel(true)
+            .build()
+        manager.notify(SUMMARY_ID, summary)
     }
 }

@@ -30,6 +30,11 @@ data class Settings(
     val preferredSources: Set<String> = emptySet(),
     /** Sem imagens; textos completos e modelo de tradução só no Wi-Fi. */
     val dataSaver: Boolean = false,
+    /** Modo leitura: fonte serifada e espaçamento maior no texto completo. */
+    val readerSerif: Boolean = false,
+    val readerWide: Boolean = false,
+    /** Borra fotos de notícias com mortos/feridos até tocar. */
+    val blurSensitive: Boolean = true,
 ) {
     fun matchesRegion(tags: List<String>) = regions.isEmpty() || tags.any { it in regions }
 
@@ -63,6 +68,9 @@ class SettingsStore(private val prefs: SharedPreferences) {
             .putStringSet("s_hidden_sources", next.hiddenSources)
             .putStringSet("s_preferred_sources", next.preferredSources)
             .putBoolean("s_data_saver", next.dataSaver)
+            .putBoolean("s_reader_serif", next.readerSerif)
+            .putBoolean("s_reader_wide", next.readerWide)
+            .putBoolean("s_blur", next.blurSensitive)
             .apply()
         _state.value = next
         onChange?.invoke(next)
@@ -87,6 +95,9 @@ class SettingsStore(private val prefs: SharedPreferences) {
         hiddenSources = prefs.getStringSet("s_hidden_sources", emptySet())!!.toSet(),
         preferredSources = prefs.getStringSet("s_preferred_sources", emptySet())!!.toSet(),
         dataSaver = prefs.getBoolean("s_data_saver", false),
+        readerSerif = prefs.getBoolean("s_reader_serif", false),
+        readerWide = prefs.getBoolean("s_reader_wide", false),
+        blurSensitive = prefs.getBoolean("s_blur", true),
     )
 }
 
@@ -110,4 +121,17 @@ fun Cluster.matchWatchWord(words: Set<String>, translated: (String) -> String): 
         val w = normalize(word.trim())
         w.isNotEmpty() && Regex("(?<![\\p{L}\\d])" + Regex.escape(w)).containsMatchIn(haystack)
     }
+}
+
+private val SENSITIVE_TERMS = listOf(
+    "morto", "mortos", "morta", "mortas", "morte", "mortes", "matou", "matam", "mata", "massacre", "chacina",
+    "ferido", "feridos", "feridas", "vítima", "vítimas", "corpo", "corpos", "cadáver",
+    "killed", "kill", "kills", "dead", "death", "deaths", "dies", "died", "wounded", "injured",
+    "casualties", "bodies", "body", "massacre", "slaughter", "toll",
+)
+
+/** Notícia que fala de mortos ou feridos: a foto aparece borrada até tocar. */
+fun Cluster.isSensitive(translated: (String) -> String): Boolean {
+    val text = normalize("$title $summary ${translated(title)}")
+    return SENSITIVE_TERMS.any { Regex("(?<![\\p{L}])" + Regex.escape(normalize(it)) + "(?![\\p{L}])").containsMatchIn(text) }
 }

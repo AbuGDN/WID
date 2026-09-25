@@ -45,6 +45,10 @@ data class ArticleRef(
     val origin: String = "internacional",
 )
 
+/** Uma leitura: dia (epochDay), história e regiões dela. */
+@Serializable
+data class ReadEvent(val day: Long, val id: String, val tags: List<String> = emptyList())
+
 /** Pasta e nota pessoal de uma notícia salva. */
 @Serializable
 data class SavedMeta(val folder: String? = null, val note: String? = null)

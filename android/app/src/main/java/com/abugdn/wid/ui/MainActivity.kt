@@ -119,6 +119,12 @@ private fun App(
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     var storyOpen by rememberSaveable { mutableStateOf(false) }
     var searchRequest by remember { mutableIntStateOf(0) }
+    var regionOpen by rememberSaveable { mutableStateOf<String?>(null) }
+    // Mais de 24 h sem abrir: mostra o que a pessoa perdeu (uma vez por abertura).
+    val missedSince = remember { repo.previousVisit }
+    var missedOpen by rememberSaveable {
+        mutableStateOf(missedSince > 0 && System.currentTimeMillis() - missedSince > 24 * 3600 * 1000L)
+    }
     LaunchedEffect(shortcut) {
         when (shortcut) {
             "story" -> storyOpen = true
@@ -129,9 +135,10 @@ private fun App(
         onShortcutHandled()
     }
     // Aparece a cada abertura até a pessoa marcar "não mostrar de novo".
-    var whatsNewOpen by rememberSaveable { mutableStateOf(repo.shouldShowWhatsNew()) }
+    val changelog = remember { repo.pendingChangelog() }
+    var whatsNewOpen by rememberSaveable { mutableStateOf(changelog.isNotEmpty()) }
     if (whatsNewOpen) {
-        WhatsNewDialog(repo.updater.installedName) { dontShowAgain ->
+        WhatsNewDialog(changelog, repo.updater.installedName) { dontShowAgain ->
             if (dontShowAgain) repo.dismissWhatsNew()
             whatsNewOpen = false
         }
@@ -141,7 +148,7 @@ private fun App(
 
     Scaffold(
         bottomBar = {
-            if (openCluster == null && !settingsOpen && !storyOpen) {
+            if (openCluster == null && !settingsOpen && !storyOpen && regionOpen == null && !missedOpen) {
                 NavigationBar {
                     Tab.entries.forEach { t ->
                         NavigationBarItem(
@@ -161,10 +168,23 @@ private fun App(
                 openCluster != null -> {
                     BackHandler { onOpenCluster(null) }
                     if (detail != null) {
-                        DetailScreen(cluster = detail, onBack = { onOpenCluster(null) }, onOpen = { onOpenCluster(it) })
+                        DetailScreen(
+                            cluster = detail,
+                            onBack = { onOpenCluster(null) },
+                            onOpen = { onOpenCluster(it) },
+                            onRegion = { onOpenCluster(null); regionOpen = it },
+                        )
                     } else {
                         MissingScreen(onBack = { onOpenCluster(null) })
                     }
+                }
+                missedOpen -> {
+                    BackHandler { missedOpen = false }
+                    MissedScreen(since = missedSince, onClose = { missedOpen = false }, onOpen = { onOpenCluster(it) })
+                }
+                regionOpen != null -> {
+                    BackHandler { regionOpen = null }
+                    RegionScreen(tag = regionOpen!!, onBack = { regionOpen = null }, onOpen = { onOpenCluster(it) })
                 }
                 storyOpen -> {
                     BackHandler { storyOpen = false }
@@ -184,8 +204,9 @@ private fun App(
                             onSettings = { settingsOpen = true },
                             onStory = { storyOpen = true },
                             searchRequest = searchRequest,
+                            onRegion = { regionOpen = it },
                         )
-                        Tab.MAP -> MapScreen(onRegion = { tag = it; tab = Tab.HOME }, onOpen = { onOpenCluster(it) })
+                        Tab.MAP -> MapScreen(onRegion = { regionOpen = it }, onOpen = { onOpenCluster(it) })
                         Tab.ARCHIVE -> ArchiveScreen(onOpen = { onOpenCluster(it) })
                         Tab.SAVED -> SavedScreen(onOpen = { onOpenCluster(it) })
                     }

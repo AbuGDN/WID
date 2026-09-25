@@ -221,6 +221,13 @@ fun SettingsScreen(onBack: () -> Unit) {
                 s.dataSaver,
             ) { update { st -> st.copy(dataSaver = it) } }
 
+            Section("Imagens sensíveis")
+            Toggle(
+                "Borrar imagens sensíveis",
+                "Fotos de notícias com mortos ou feridos aparecem borradas até você tocar",
+                s.blurSensitive,
+            ) { update { st -> st.copy(blurSensitive = it) } }
+
             Section("Aparência")
             Chips(ThemeMode.entries, selected = { it == s.theme }, label = {
                 when (it) {

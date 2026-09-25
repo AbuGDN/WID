@@ -73,6 +73,7 @@ fun HomeScreen(
     onSettings: () -> Unit,
     onStory: () -> Unit,
     searchRequest: Int = 0,
+    onRegion: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val repo = context.repository
@@ -188,6 +189,14 @@ fun HomeScreen(
                         }
                     }
                 }
+                if (tag != null && !searching) {
+                    item {
+                        androidx.compose.material3.TextButton(
+                            onClick = { onRegion(tag) },
+                            modifier = Modifier.padding(start = 8.dp),
+                        ) { Text("🌍 Página de ${TAG_LABELS[tag] ?: tag}: contexto, tendência e 30 dias") }
+                    }
+                }
                 if (searching) {
                     item {
                         Text(
@@ -261,14 +270,7 @@ private fun TopCard(c: Cluster, onOpen: (String) -> Unit) {
         modifier = Modifier.padding(16.dp).fillMaxWidth().clickable { onOpen(c.id) },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        c.image?.takeUnless { LocalDataSaver.current }?.let {
-            AsyncImage(
-                model = it,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
-            )
-        }
+        NewsImage(c, Modifier.fillMaxWidth().aspectRatio(16f / 9f), revealable = false)
         Column(Modifier.padding(16.dp)) {
             Text("PRINCIPAL DO DIA", color = Red, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
@@ -322,14 +324,7 @@ fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
             Spacer(Modifier.height(4.dp))
             Meta(c)
         }
-        c.image?.takeUnless { LocalDataSaver.current }?.let {
-            AsyncImage(
-                model = it,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.width(88.dp).aspectRatio(1f).clip(RoundedCornerShape(8.dp)),
-            )
-        }
+        NewsImage(c, Modifier.width(88.dp).aspectRatio(1f).clip(RoundedCornerShape(8.dp)), revealable = false)
     }
 }
 
