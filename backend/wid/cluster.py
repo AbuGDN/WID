@@ -42,8 +42,12 @@ class Cluster:
         return {a.source for a in self.articles}
 
     def lead(self) -> Article:
-        """Artigo que dá título ao grupo: português primeiro, depois peso da fonte."""
-        return max(self.articles, key=lambda a: (a.lang == "pt", a.weight, -a.published.timestamp()))
+        """Artigo que dá título ao grupo: português primeiro, depois link direto (não Google
+        News, que não tem resumo nem permite baixar o texto), depois peso da fonte."""
+        return max(
+            self.articles,
+            key=lambda a: (a.lang == "pt", "news.google.com" not in a.url, a.weight, -a.published.timestamp()),
+        )
 
     def similarity(self, toks: set[str], published: datetime) -> bool:
         if abs(published - self.start) > MERGE_WINDOW:
