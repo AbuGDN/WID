@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -81,13 +83,13 @@ fun HomeScreen(
     val widgets = remember { GlanceAppWidgetManager(context) }
     var showWidgetHint by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        repo.updater.check()
         showWidgetHint = runCatching { widgets.getGlanceIds(TopWidget::class.java).isEmpty() }.getOrDefault(false)
     }
     val scope = rememberCoroutineScope()
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var showRead by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     // Atalho "Buscar" do ícone do app.
     LaunchedEffect(searchRequest) { if (searchRequest > 0) searchOpen = true }
@@ -151,13 +153,17 @@ fun HomeScreen(
         ) {
             val data = feed
             val searching = searchOpen && query.isNotBlank()
-            val clusters = if (searching) {
-                search((data?.clusters.orEmpty() + saved).distinctBy { it.id }, query, repo.translator::cached)
-            } else {
-                data?.clusters.orEmpty().filter { tag == null || tag in it.tags }
+            // Notícias já abertas vão para a aba "Lidas".
+            val inFilter = data?.clusters.orEmpty().filter { tag == null || tag in it.tags }
+            val unreadList = inFilter.filter { it.id !in readIds }
+            val readList = inFilter.filter { it.id in readIds }
+            val clusters = when {
+                searching -> search((data?.clusters.orEmpty() + saved).distinctBy { it.id }, query, repo.translator::cached)
+                showRead -> readList
+                else -> unreadList
             }
             val tagsPresent = if (searching) emptyList() else TAG_LABELS.keys.filter { key -> data?.clusters.orEmpty().any { key in it.tags } }
-            val top = data?.topOfDay?.takeIf { tag == null && !searching }
+            val top = data?.topOfDay?.takeIf { tag == null && !searching && !showRead && it.id !in readIds }
 
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                 error?.let { item { Text(it, color = Red, modifier = Modifier.padding(16.dp, 8.dp)) } }
@@ -195,6 +201,23 @@ fun HomeScreen(
                             onClick = { onRegion(tag) },
                             modifier = Modifier.padding(start = 8.dp),
                         ) { Text("🌍 Página de ${TAG_LABELS[tag] ?: tag}: contexto, tendência e 30 dias") }
+                    }
+                }
+                if (!searching && data != null) {
+                    item {
+                        TabRow(selectedTabIndex = if (showRead) 1 else 0, modifier = Modifier.padding(top = 8.dp)) {
+                            Tab(selected = !showRead, onClick = { showRead = false }, text = { Text("Não lidas (${unreadList.size})") })
+                            Tab(selected = showRead, onClick = { showRead = true }, text = { Text("Lidas (${readList.size})") })
+                        }
+                    }
+                    if (clusters.isEmpty()) {
+                        item {
+                            Text(
+                                if (showRead) "Nenhuma notícia lida aqui ainda." else "Você leu tudo por aqui. As abertas estão na aba Lidas.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(24.dp),
+                            )
+                        }
                     }
                 }
                 if (searching) {

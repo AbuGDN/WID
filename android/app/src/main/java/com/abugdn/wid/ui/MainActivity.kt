@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.abugdn.wid.repository
 import com.abugdn.wid.sync.SyncWorker
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 const val EXTRA_CLUSTER_ID = "cluster_id"
 
@@ -87,6 +89,8 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         repository.startVisit()
+        // Procura versão nova no GitHub toda vez que o app é aberto ou volta para a frente.
+        lifecycleScope.launch { repository.updater.check(force = true) }
     }
 
     override fun onStop() {

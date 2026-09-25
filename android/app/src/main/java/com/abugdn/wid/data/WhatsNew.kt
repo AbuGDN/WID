@@ -11,6 +11,14 @@ data class ChangelogEntry(val versionCode: Long, val items: List<String>)
 
 val CHANGELOG = listOf(
     ChangelogEntry(
+        12,
+        listOf(
+            "📥 Aba Lidas: as notícias que você já abriu saem da lista principal e ficam em \"Lidas\" (tela Hoje).",
+            "🔄 O app procura versão nova toda vez que é aberto; não precisa mais ir aos Ajustes.",
+            "📰 Principal do dia mais atual: histórias de ontem perdem peso com o tempo e o servidor volta a atualizar a cada 30 minutos.",
+        ),
+    ),
+    ChangelogEntry(
         11,
         listOf(
             "📜 Novidades acumuladas: se você pular versões, este aviso mostra as notas de todas as que perdeu.",
