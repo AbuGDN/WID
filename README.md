@@ -1,13 +1,16 @@
-# WID — notícias de guerra
+# Argos — cem olhos sobre a guerra
+
+> Antes se chamava **WID**. O nome do pacote Android (`com.abugdn.wid`), a pasta do código e a variável
+> `WID_VERSION_CODE` mantêm o nome antigo de propósito: trocar o pacote obrigaria todo mundo a desinstalar.
 
 App Android pessoal (para até 5 pessoas) com notícias de guerra, foco em Israel/Oriente Médio, tudo em
 português, com widget, notificações e **custo zero**. O "servidor" é o próprio GitHub: um workflow coleta
 ~26 feeds RSS a cada 30 min, agrupa e analisa as notícias e publica JSONs na branch `gh-pages`; o app lê
 esses JSONs, traduz no próprio celular e guarda tudo offline.
 
-- Repositório: https://github.com/AbuGDN/WID (público)
-- Releases (APK): https://github.com/AbuGDN/WID/releases
-- Dados publicados: `https://raw.githubusercontent.com/AbuGDN/WID/gh-pages/feed.json` (e `top.json`, `history/`, `stats/`, `sagas.json`, `sources_status.json`)
+- Repositório: https://github.com/AbuGDN/Argos (público)
+- Releases (APK): https://github.com/AbuGDN/Argos/releases
+- Dados publicados: `https://raw.githubusercontent.com/AbuGDN/Argos/gh-pages/feed.json` (e `top.json`, `history/`, `stats/`, `sagas.json`, `sources_status.json`)
 - Histórico de decisões e fases: [`PLANO.md`](PLANO.md)
 - Contexto para o Claude Code: [`CLAUDE.md`](CLAUDE.md)
 
@@ -30,8 +33,8 @@ coleta de notícias e a compilação do APK continuam rodando no GitHub Actions.
 ### 2. Clonar
 
 ```bash
-git clone https://github.com/AbuGDN/WID.git
-cd WID
+git clone https://github.com/AbuGDN/Argos.git
+cd Argos
 git checkout claude/adoring-hamilton-kr5stn   # branch onde está todo o código (é a padrão hoje)
 ```
 
@@ -72,8 +75,8 @@ cd android
 > ⚠️ **Número da versão em builds locais.** O `versionCode` vem da variável `WID_VERSION_CODE` (no CI é o
 > número da execução do workflow "App Android"). Sem ela, a build local sai como versão 1 e o Android
 > **recusa instalar por cima** de uma versão maior. Para testar no seu celular sem desinstalar, use o
-> mesmo número da última release: `WID_VERSION_CODE=13 ./gradlew installRelease`
-> (PowerShell: `$env:WID_VERSION_CODE=13; .\gradlew.bat installRelease`).
+> mesmo número da última release: `WID_VERSION_CODE=15 ./gradlew installRelease`
+> (PowerShell: `$env:WID_VERSION_CODE=15; .\gradlew.bat installRelease`).
 > **Nunca** instale um número maior que o da próxima release do CI, senão as atualizações automáticas
 > param de instalar (o Android não aceita "voltar" de versão).
 
@@ -84,7 +87,7 @@ Não precisa compilar no PC: **todo push que mexe em `android/` compila e public
 
 Antes do push, acrescente as novidades no topo de `CHANGELOG` em
 `android/app/src/main/java/com/abugdn/wid/data/WhatsNew.kt`, com o `versionCode` **esperado**:
-o número da última execução de "App Android" em https://github.com/AbuGDN/WID/actions + 1
+o número da última execução de "App Android" em https://github.com/AbuGDN/Argos/actions + 1
 (se uma build falhar, o número pula; o app aceita isso, só o rótulo da versão antiga fica diferente).
 
 ---
@@ -100,7 +103,7 @@ GitHub Actions: update-feed.yml (ciclos de ~5 h, uma coleta a cada 30 min)
     analysis.py  números divergentes, enquadramento, tensão/anomalias, sagas, quem noticia primeiro
     build.py     monta e grava tudo na branch gh-pages (1 commit, force-push)
         │
-        ▼  raw.githubusercontent.com/AbuGDN/WID/gh-pages/*.json
+        ▼  raw.githubusercontent.com/AbuGDN/Argos/gh-pages/*.json
 App Android (Kotlin + Jetpack Compose)                       build-android.yml → Releases (APK)
   data/    Repository (baixa feed, traduz com ML Kit, texto completo com Readability4J),
            Storage (JSON na pasta privada), Settings, Updater (Releases do GitHub), conteúdo fixo

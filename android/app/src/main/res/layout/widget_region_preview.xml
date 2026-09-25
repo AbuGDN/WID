@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="ISRAEL · PRINCIPAL"
-        android:textColor="#FFE53935"
+        android:textColor="#FFC9A227"
         android:textSize="11sp"
         android:textStyle="bold" />
 
@@ -21,7 +21,7 @@
         android:layout_marginTop="4dp"
         android:maxLines="3"
         android:text="Israel ataca alvos do Hezbollah em Beirute após nova onda de foguetes"
-        android:textColor="#FFF2F2F2"
+        android:textColor="#FFE8E2D0"
         android:textSize="15sp"
         android:textStyle="bold" />
 
@@ -30,6 +30,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="G1 · 6 veículos · há 2 h"
-        android:textColor="#FF9AA0A6"
+        android:textColor="#FF8A8578"
         android:textSize="11sp" />
 </LinearLayout>

@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "WID"
+rootProject.name = "Argos"
 include(":app")

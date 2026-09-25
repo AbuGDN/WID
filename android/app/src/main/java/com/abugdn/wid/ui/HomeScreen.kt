@@ -53,7 +53,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -132,7 +134,7 @@ fun HomeScreen(
                     IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, contentDescription = "Ajustes") }
                 }, title = {
                     Column {
-                        Text("WID · Guerras", fontWeight = FontWeight.Bold)
+                        Text("ARGOS", fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif, letterSpacing = 4.sp, color = Accent)
                         feed?.let { f ->
                             val fresh = f.clusters.count { it.id !in readIds && isNewSinceLastVisit(it, repo.previousVisit) }
                             Text(
@@ -166,7 +168,7 @@ fun HomeScreen(
             val top = data?.topOfDay?.takeIf { tag == null && !searching && !showRead && it.id !in readIds }
 
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                error?.let { item { Text(it, color = Red, modifier = Modifier.padding(16.dp, 8.dp)) } }
+                error?.let { item { Text(it, color = Accent, modifier = Modifier.padding(16.dp, 8.dp)) } }
                 item { UpdateBanner(Modifier.padding(16.dp, 8.dp)) }
                 if (data == null) {
                     item {
@@ -295,7 +297,7 @@ private fun TopCard(c: Cluster, onOpen: (String) -> Unit) {
     ) {
         NewsImage(c, Modifier.fillMaxWidth().aspectRatio(16f / 9f), revealable = false)
         Column(Modifier.padding(16.dp)) {
-            Text("PRINCIPAL DO DIA", color = Red, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            Text("PRINCIPAL DO DIA", color = Accent, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             Text(translator.display(c.title, c.lang), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             if (c.summary.isNotBlank()) {
@@ -334,7 +336,7 @@ fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
                 "+$addedSinceRead DESDE SUA LEITURA".takeIf { addedSinceRead > 0 },
             )
             if (badges.isNotEmpty()) {
-                Text(badges.joinToString(" · "), color = Red, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text(badges.joinToString(" · "), color = if (c.urgent) Alert else Accent, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
             Text(
                 translator.display(c.title, c.lang),

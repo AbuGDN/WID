@@ -233,7 +233,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 when (it) {
                     ThemeMode.SYSTEM -> "Igual ao sistema"
                     ThemeMode.LIGHT -> "Claro"
-                    ThemeMode.DARK -> "Escuro"
+                    ThemeMode.DARK -> "Escuro (padrão)"
                     ThemeMode.AMOLED -> "Preto (AMOLED)"
                 }
             }) { update { st -> st.copy(theme = it) } }
@@ -278,7 +278,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp, 4.dp),
             )
-            widgetMsg?.let { Text(it, color = Red, modifier = Modifier.padding(16.dp, 8.dp)) }
+            widgetMsg?.let { Text(it, color = Accent, modifier = Modifier.padding(16.dp, 8.dp)) }
         }
     }
 }
@@ -291,7 +291,7 @@ private fun Section(title: String) {
         title,
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.Bold,
-        color = Red,
+        color = Accent,
         modifier = Modifier.padding(16.dp, 12.dp),
     )
 }

@@ -55,7 +55,7 @@ fun ContextDialog(
                 Text(text)
                 if (!milestones.isNullOrEmpty()) {
                     Spacer(Modifier.height(16.dp))
-                    Text("Marcos", style = MaterialTheme.typography.titleSmall, color = Red, fontWeight = FontWeight.Bold)
+                    Text("Marcos", style = MaterialTheme.typography.titleSmall, color = Accent, fontWeight = FontWeight.Bold)
                     milestones.forEach { m ->
                         Row(Modifier.padding(top = 6.dp)) {
                             Text(m.date, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(84.dp))
@@ -65,7 +65,7 @@ fun ContextDialog(
                 }
                 if (related.isNotEmpty() && onOpen != null) {
                     Spacer(Modifier.height(16.dp))
-                    Text("Notícias recentes", style = MaterialTheme.typography.titleSmall, color = Red, fontWeight = FontWeight.Bold)
+                    Text("Notícias recentes", style = MaterialTheme.typography.titleSmall, color = Accent, fontWeight = FontWeight.Bold)
                     related.forEach { c ->
                         Text(
                             translator.display(c.title, c.lang),

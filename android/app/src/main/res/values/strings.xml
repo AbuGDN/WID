@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">WID</string>
-    <string name="widget_name">Principal do dia</string>
+    <string name="app_name">Argos</string>
+    <string name="widget_name">Argos · Principal do dia</string>
     <string name="widget_description">A principal notícia de guerra do dia</string>
     <string name="channel_urgent">Urgente</string>
     <string name="channel_top">Principal do dia</string>
@@ -10,9 +10,9 @@
     <string name="channel_follow">Histórias seguidas</string>
     <string name="channel_spike">Alta incomum de notícias</string>
     <string name="channel_update">Atualizações do app</string>
-    <string name="widget_region_name">Principal por região</string>
+    <string name="widget_region_name">Argos · Por região</string>
     <string name="widget_region_description">A principal notícia de uma região escolhida</string>
-    <string name="widget_compact_name">Manchete (compacto)</string>
+    <string name="widget_compact_name">Argos · Manchete</string>
     <string name="widget_compact_description">A principal do dia em uma linha</string>
     <string name="shortcut_story">O dia em 1 minuto</string>
     <string name="shortcut_search">Buscar</string>

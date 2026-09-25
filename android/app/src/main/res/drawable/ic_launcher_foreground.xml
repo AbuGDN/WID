@@ -1,10 +1,27 @@
+<!-- Argos: o olho no triângulo (Olho da Providência), ouro antigo. Área segura: círculo de raio 33 no centro. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#00000000" android:strokeColor="#FFC62828" android:strokeWidth="5"
-        android:pathData="M54,30a24,24 0,1 1,0 48a24,24 0,1 1,0 -48z" />
-    <path android:fillColor="#FFFFFFFF"
-        android:pathData="M54,44a10,10 0,1 1,0 20a10,10 0,1 1,0 -20z" />
-    <path android:fillColor="#00000000" android:strokeColor="#FFC62828" android:strokeWidth="4"
-        android:pathData="M54,22L54,36M54,72L54,86M22,54L36,54M72,54L86,54" />
+    <group android:scaleX="1.15" android:scaleY="1.15" android:pivotX="54" android:pivotY="54">
+    <!-- brilho sutil atrás do olho -->
+    <path android:fillColor="#1FC9A227"
+        android:pathData="M54,40a15,15 0,1 1,0 30a15,15 0,1 1,0 -30z" />
+    <!-- triângulo -->
+    <path android:fillColor="#00000000" android:strokeColor="#FFC9A227" android:strokeWidth="3.2"
+        android:strokeLineJoin="round"
+        android:pathData="M54,27 L77.5,68.5 L30.5,68.5 Z" />
+    <!-- raios curtos saindo do olho -->
+    <path android:fillColor="#00000000" android:strokeColor="#99C9A227" android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:pathData="M54,42.5L54,45.5M46.5,45L48,47.3M61.5,45L60,47.3M42,50.5L44.5,51.5M66,50.5L63.5,51.5" />
+    <!-- olho amendoado -->
+    <path android:fillColor="#00000000" android:strokeColor="#FFC9A227" android:strokeWidth="2.4"
+        android:strokeLineJoin="round"
+        android:pathData="M42,57 Q54,47 66,57 Q54,67 42,57 Z" />
+    <!-- íris e pupila -->
+    <path android:fillColor="#FFC9A227"
+        android:pathData="M54,52.3a4.7,4.7 0,1 1,0 9.4a4.7,4.7 0,1 1,0 -9.4z" />
+    <path android:fillColor="#FF050505"
+        android:pathData="M54,55.2a1.8,1.8 0,1 1,0 3.6a1.8,1.8 0,1 1,0 -3.6z" />
+    </group>
 </vector>

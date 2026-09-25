@@ -124,14 +124,14 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
                         Icon(
                             Icons.Filled.Notifications,
                             contentDescription = if (isFollowed) "Deixar de seguir" else "Seguir história",
-                            tint = if (isFollowed) Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (isFollowed) Accent else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     IconButton(onClick = { repo.toggleSaved(cluster) }) {
                         Icon(
                             Icons.Filled.Star,
                             contentDescription = if (isSaved) "Remover dos salvos" else "Salvar",
-                            tint = if (isSaved) Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (isSaved) Accent else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Box {
@@ -161,7 +161,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
             NewsImage(cluster, Modifier.fillMaxWidth().aspectRatio(16f / 9f))
             Column(Modifier.padding(16.dp)) {
                 if (cluster.urgent) {
-                    Text("URGENTE", color = Red, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    Text("URGENTE", color = Alert, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                 }
                 Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
@@ -170,7 +170,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
                     Text(
                         "Seguindo: você será avisado quando outros veículos noticiarem.",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Red,
+                        color = Accent,
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
@@ -179,7 +179,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
                         "+${newSources.size} ${if (newSources.size == 1) "veículo" else "veículos"} desde que você leu: " +
                             newSources.joinToString(", "),
                         style = MaterialTheme.typography.labelMedium,
-                        color = Red,
+                        color = Accent,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 6.dp),
                     )
@@ -304,7 +304,7 @@ private fun Perspectives(cluster: Cluster, newIds: Set<String>, onProfile: (Stri
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         ) {
             Column(Modifier.padding(12.dp)) {
-                Text(ORIGIN_LABELS.getValue(origin).uppercase(), style = MaterialTheme.typography.labelSmall, color = Red, fontWeight = FontWeight.Bold)
+                Text(ORIGIN_LABELS.getValue(origin).uppercase(), style = MaterialTheme.typography.labelSmall, color = Accent, fontWeight = FontWeight.Bold)
                 articles.distinctBy { it.source }.forEach { a ->
                     Column(Modifier.fillMaxWidth().clickable { openUrl(context, a.url) }.padding(vertical = 6.dp)) {
                         Text(translator.display(a.title, a.lang), style = MaterialTheme.typography.bodyMedium)
@@ -316,7 +316,7 @@ private fun Perspectives(cluster: Cluster, newIds: Set<String>, onProfile: (Stri
                                 modifier = Modifier.clickable { onProfile(a.source) }.padding(vertical = 4.dp),
                             )
                             if (a.id in newIds) {
-                                Text("  NOVO", style = MaterialTheme.typography.labelSmall, color = Red, fontWeight = FontWeight.Bold)
+                                Text("  NOVO", style = MaterialTheme.typography.labelSmall, color = Accent, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -364,7 +364,7 @@ private fun SavedMetaSection(id: String) {
             Text(
                 "SALVA" + (meta.folder?.let { " · PASTA: ${it.uppercase()}" } ?: ""),
                 style = MaterialTheme.typography.labelSmall,
-                color = Red,
+                color = Accent,
                 fontWeight = FontWeight.Bold,
             )
             Text(
@@ -435,7 +435,7 @@ private fun TimelineItem(a: ArticleRef, first: Boolean, last: Boolean, isNew: Bo
         Box(Modifier.width(20.dp).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxHeight()) {
                 Box(Modifier.width(2.dp).height(14.dp).background(if (first) MaterialTheme.colorScheme.surface else line))
-                Box(Modifier.size(10.dp).clip(CircleShape).background(if (first) Red else line))
+                Box(Modifier.size(10.dp).clip(CircleShape).background(if (first) Accent else line))
                 Box(Modifier.width(2.dp).weight(1f).background(if (last) MaterialTheme.colorScheme.surface else line))
             }
         }
@@ -444,7 +444,7 @@ private fun TimelineItem(a: ArticleRef, first: Boolean, last: Boolean, isNew: Bo
                 "${dayClock(a.published)} · ${a.source}" + (if (first) " · primeiro a noticiar" else "") +
                     if (isNew) " · NOVO desde sua leitura" else "",
                 style = MaterialTheme.typography.labelSmall,
-                color = if (first || isNew) Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (first || isNew) Accent else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(translator.display(a.title, a.lang), style = MaterialTheme.typography.bodyMedium)
         }
@@ -458,7 +458,7 @@ fun MissingScreen(onBack: () -> Unit) {
         contentWindowInsets = NoInsets,
         topBar = {
             TopAppBar(
-                title = { Text("WID") },
+                title = { Text("Argos") },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar") }
                 },

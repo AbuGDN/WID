@@ -36,11 +36,12 @@ import java.util.Locale
 
 private val FIGURE_LABELS = mapOf("killed" to "Mortos", "injured" to "Feridos")
 
+/** Escala da paleta Argos: verde-musgo, ouro, cobre e vermelho-sangue. */
 fun tensionColor(level: String): Color = when (level) {
-    "crítica" -> Color(0xFFE53935)
-    "alta" -> Color(0xFFFB8C00)
-    "moderada" -> Color(0xFFFFB300)
-    else -> Color(0xFF66BB6A)
+    "crítica" -> Alert
+    "alta" -> Color(0xFFC8662B)
+    "moderada" -> Accent
+    else -> Color(0xFF6E8B6A)
 }
 
 @Composable
@@ -54,7 +55,7 @@ private fun InsightCard(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun CardTitle(text: String, color: Color = Red) {
+private fun CardTitle(text: String, color: Color = Accent) {
     Text(text, style = MaterialTheme.typography.labelMedium, color = color, fontWeight = FontWeight.Bold)
 }
 
@@ -84,7 +85,7 @@ fun TensionGauge(stat: RegionStat, modifier: Modifier = Modifier) {
             Text(
                 "⚠ Alta incomum: ritmo ${"%.1f".format(stat.spikeRatio)}× o normal nas últimas 6 h",
                 style = MaterialTheme.typography.labelMedium,
-                color = Red,
+                color = Alert,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 4.dp),
             )
@@ -104,7 +105,7 @@ fun ConflictCounter(tag: String, modifier: Modifier = Modifier) {
     val conflict = CONFLICTS[tag] ?: return
     val day = NumberFormat.getIntegerInstance(Locale("pt", "BR")).format(conflict.day())
     Row(modifier, verticalAlignment = Alignment.Bottom) {
-        Text("DIA $day", style = MaterialTheme.typography.headlineSmall, color = Red, fontWeight = FontWeight.Black)
+        Text("DIA $day", style = MaterialTheme.typography.headlineSmall, color = Accent, fontWeight = FontWeight.Black)
         Spacer(Modifier.width(8.dp))
         Text(
             "${conflict.label} (desde ${conflict.start.dayOfMonth}/${conflict.start.monthValue}/${conflict.start.year})",
@@ -121,7 +122,7 @@ fun FiguresCard(cluster: Cluster) {
     if (cluster.figures.isEmpty()) return
     val divergent = cluster.figures.values.any { it.divergent }
     InsightCard {
-        CardTitle(if (divergent) "⚠ NÚMEROS DIVERGENTES" else "NÚMEROS CITADOS")
+        CardTitle(if (divergent) "⚠ NÚMEROS DIVERGENTES" else "NÚMEROS CITADOS", if (divergent) Alert else Accent)
         cluster.figures.forEach { (kind, info) ->
             Text(
                 FIGURE_LABELS[kind] ?: kind,
@@ -190,7 +191,7 @@ fun SagaCard(cluster: Cluster, onOpen: (String) -> Unit) {
                     Text(
                         "${i + 1}. ${dayClock(ch.published)} · ${ch.source}" + if (current) " · você está aqui" else "",
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (current) Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (current) Accent else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         repo.translator.display(ch.title, ch.lang),

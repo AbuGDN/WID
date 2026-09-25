@@ -52,7 +52,7 @@ fun MissedScreen(since: Long, onClose: () -> Unit, onOpen: (String) -> Unit) {
         LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
                 Text(
-                    "Você ficou ${if (days == 1L) "1 dia" else "$days dias"} sem abrir o WID. As principais do período:",
+                    "Você ficou ${if (days == 1L) "1 dia" else "$days dias"} sem abrir o Argos. As principais do período:",
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(16.dp),
                 )
@@ -66,7 +66,7 @@ fun MissedScreen(since: Long, onClose: () -> Unit, onOpen: (String) -> Unit) {
                     Text(
                         "DIAS ANTERIORES",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Red,
+                        color = Accent,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(start = 16.dp, top = 16.dp),
                     )

@@ -23,7 +23,11 @@ import kotlinx.serialization.Serializable
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-private const val LATEST_RELEASE = "https://api.github.com/repos/AbuGDN/WID/releases/latest"
+/** Nome novo primeiro; o antigo (WID) serve até o repositório ser renomeado. */
+private val LATEST_RELEASE = listOf(
+    "https://api.github.com/repos/AbuGDN/Argos/releases/latest",
+    "https://api.github.com/repos/AbuGDN/WID/releases/latest",
+)
 private const val APK_MIME = "application/vnd.android.package-archive"
 private const val CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
 
@@ -42,7 +46,7 @@ data class AppUpdate(val versionCode: Long, val versionName: String, val apkUrl:
 sealed interface UpdateState {
     data object Idle : UpdateState
     data object Downloading : UpdateState
-    /** Falta o usuário permitir "instalar apps desconhecidos" para o WID. */
+    /** Falta o usuário permitir "instalar apps desconhecidos" para o Argos. */
     data object NeedsPermission : UpdateState
     data class Failed(val message: String) : UpdateState
 }
@@ -73,14 +77,15 @@ class Updater(private val context: Context) {
             return@withContext Result.success(_available.value)
         }
         runCatching {
-            val request = Request.Builder().url(LATEST_RELEASE)
-                .header("Accept", "application/vnd.github+json")
-                .header("User-Agent", "WID-app")
-                .build()
-            val body = http.newCall(request).execute().use { resp ->
-                if (!resp.isSuccessful) throw IOException("HTTP ${resp.code}")
-                resp.body?.string() ?: throw IOException("resposta vazia")
-            }
+            val body = LATEST_RELEASE.firstNotNullOfOrNull { url ->
+                val request = Request.Builder().url(url)
+                    .header("Accept", "application/vnd.github+json")
+                    .header("User-Agent", "Argos-app")
+                    .build()
+                runCatching {
+                    http.newCall(request).execute().use { resp -> if (resp.isSuccessful) resp.body?.string() else null }
+                }.getOrNull()
+            } ?: throw IOException("GitHub indisponível")
             val release = json.decodeFromString<GhRelease>(body)
             // Tags são "v1.0.<número da build>", e o número da build é o versionCode.
             val code = release.tag.substringAfterLast('.').toLongOrNull() ?: throw IOException("tag inesperada: ${release.tag}")
@@ -112,12 +117,12 @@ class Updater(private val context: Context) {
             return
         }
         val dm = context.getSystemService(DownloadManager::class.java)
-        val fileName = "WID-${update.versionName}.apk"
+        val fileName = "Argos-${update.versionName}.apk"
         context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.listFiles()?.forEach { it.delete() }
         val id = runCatching {
             dm.enqueue(
                 DownloadManager.Request(Uri.parse(update.apkUrl))
-                    .setTitle("WID ${update.versionName}")
+                    .setTitle("Argos ${update.versionName}")
                     .setMimeType(APK_MIME)
                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                     .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, fileName)

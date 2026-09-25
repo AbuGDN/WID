@@ -46,7 +46,7 @@ fun WhatsNewDialog(entries: List<ChangelogEntry>, installedName: String, onClose
                             Text(
                                 "Versão $label",
                                 style = MaterialTheme.typography.titleSmall,
-                                color = Red,
+                                color = Accent,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(top = if (i == 0) 0.dp else 8.dp, bottom = 6.dp),
                             )

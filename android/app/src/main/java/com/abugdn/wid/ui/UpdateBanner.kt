@@ -46,7 +46,7 @@ fun UpdateBanner(modifier: Modifier = Modifier) {
             val hint = when (val s = state) {
                 UpdateState.Idle -> "Você está na ${updater.installedName}."
                 UpdateState.Downloading -> "Baixando… o instalador abre sozinho ao terminar."
-                UpdateState.NeedsPermission -> "Permita \"instalar apps desconhecidos\" para o WID e toque em Atualizar de novo."
+                UpdateState.NeedsPermission -> "Permita \"instalar apps desconhecidos\" para o Argos e toque em Atualizar de novo."
                 is UpdateState.Failed -> "${s.message}. Tente de novo ou baixe pelo navegador."
             }
             Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimary)

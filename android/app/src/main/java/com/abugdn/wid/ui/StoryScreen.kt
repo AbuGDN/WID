@@ -153,7 +153,7 @@ private fun StoryPage(cluster: Cluster, index: Int, total: Int, modifier: Modifi
         ) {
             Text(
                 "${index + 1}/$total" + if (index == 0) " · PRINCIPAL DO DIA" else "",
-                color = Red,
+                color = Accent,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
             )

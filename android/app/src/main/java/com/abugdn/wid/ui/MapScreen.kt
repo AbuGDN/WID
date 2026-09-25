@@ -271,7 +271,7 @@ fun TrendRow(label: String, values: List<Int>, highlight: Boolean, onClick: (() 
             }
         }
     }
-    val barColor = if (highlight) Red else MaterialTheme.colorScheme.onSurfaceVariant
+    val barColor = if (highlight) Accent else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         Modifier.fillMaxWidth()
             .let { if (onClick != null) it.clickable(onClick = onClick) else it }
@@ -283,7 +283,7 @@ fun TrendRow(label: String, values: List<Int>, highlight: Boolean, onClick: (() 
             Text(
                 "$last na semana" + if (change.isNotEmpty()) " · $change" else "",
                 style = MaterialTheme.typography.labelSmall,
-                color = if (change.startsWith("▲") || change == "novo") Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (change.startsWith("▲") || change == "novo") Accent else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         val max = (values.maxOrNull() ?: 0).coerceAtLeast(1)
@@ -309,16 +309,17 @@ private fun countIcon(context: Context, count: Int): Drawable {
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = AndroidCanvas(bitmap)
     val r = size / 2f
-    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE53935.toInt() }
+    // Ouro Argos com contorno preto e número em preto.
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFC9A227.toInt() }
     val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFFFFFFF.toInt()
+        color = 0xFF050505.toInt()
         style = Paint.Style.STROKE
         strokeWidth = 2.5f * density
     }
     canvas.drawCircle(r, r, r - 2 * density, fill)
     canvas.drawCircle(r, r, r - 2 * density, stroke)
     val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFFFFFFF.toInt()
+        color = 0xFF050505.toInt()
         textAlign = Paint.Align.CENTER
         textSize = 13 * density
         typeface = Typeface.DEFAULT_BOLD

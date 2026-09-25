@@ -37,14 +37,14 @@ jobs:
       - name: Renomear APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/release/app-release.apk "dist/WID-1.0.${WID_VERSION_CODE}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/Argos-1.0.${WID_VERSION_CODE}.apk"
 
       # O Obtainium acompanha os Releases deste repositório e atualiza o app sozinho.
       - name: Publicar release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: WID 1.0.${{ github.run_number }}
+          name: Argos 1.0.${{ github.run_number }}
           body: "Build automática do commit ${{ github.sha }}."
           files: dist/*.apk
           make_latest: true

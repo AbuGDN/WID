@@ -103,7 +103,7 @@ fun RegionScreen(tag: String, onBack: () -> Unit, onOpen: (String) -> Unit) {
                     Text(
                         dayLabel(day.date).uppercase(),
                         style = MaterialTheme.typography.labelMedium,
-                        color = Red,
+                        color = Accent,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(start = 16.dp, top = 8.dp),
                     )
@@ -129,7 +129,7 @@ private fun Header(text: String) {
     Text(
         text,
         style = MaterialTheme.typography.titleSmall,
-        color = Red,
+        color = Accent,
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 4.dp),
     )

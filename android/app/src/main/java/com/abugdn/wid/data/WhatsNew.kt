@@ -11,6 +11,16 @@ data class ChangelogEntry(val versionCode: Long, val items: List<String>)
 
 val CHANGELOG = listOf(
     ChangelogEntry(
+        15,
+        listOf(
+            "👁 O WID agora é ARGOS: o gigante de cem olhos que nunca dormia. Nenhuma guerra escapa.",
+            "🔺 Ícone novo: o olho no triângulo, em ouro sobre preto (também nas notificações e atalhos).",
+            "⚫ Paleta \"Ordem\": preto profundo, ouro antigo, osso e vermelho-sangue só para alertas. Títulos em fonte serifada.",
+            "🎨 Escuro é o padrão agora; o tema claro virou \"pergaminho\". Troque em Ajustes → Aparência.",
+            "🖼 Widgets e o cartão de compartilhar com a identidade nova.",
+        ),
+    ),
+    ChangelogEntry(
         14,
         listOf(
             "🌐 Tradução afinada para guerra: siglas agora saem certas (US → Estados Unidos, e não \"nós\"; IDF → Forças de Defesa de Israel; UN → Nações Unidas; IRGC, ISIS, UAE, PM...).",
@@ -60,7 +70,7 @@ val CHANGELOG = listOf(
             "👤 Pessoas: Netanyahu, Khamenei, Trump, Putin, Zelensky, líderes do Hamas e do Hezbollah e outros, com notícias recentes que os citam.",
             "📰 Perfil dos veículos: toque no nome de um veículo (ⓘ) para ver país, dono e linha editorial.",
             "🔔 Notificações com botões Salvar e Seguir.",
-            "📌 Atalhos: segure o ícone do WID para O dia em 1 minuto, Buscar e Salvos.",
+            "📌 Atalhos: segure o ícone do app para O dia em 1 minuto, Buscar e Salvos.",
             "📶 Economia de dados (Ajustes): sem imagens e downloads grandes só no Wi-Fi.",
             "📁 Pastas e notas nos Salvos: toque no cartão \"Salva\" dentro da notícia.",
             "⚫ Tema preto AMOLED em Ajustes → Aparência.",

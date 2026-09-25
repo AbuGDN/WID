@@ -56,22 +56,22 @@ private fun CompactBody(feed: Feed?, translator: Translator) {
         actionStartActivity<MainActivity>()
     }
     Row(
-        modifier = GlanceModifier.fillMaxSize().background(Color(0xFF15181B)).cornerRadius(16.dp)
+        modifier = GlanceModifier.fillMaxSize().background(Color(0xFF050505)).cornerRadius(16.dp)
             .padding(horizontal = 14.dp, vertical = 6.dp).clickable(action),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("●", style = TextStyle(color = ColorProvider(Color(0xFFE53935)), fontSize = 14.sp))
+        Text("▲", style = TextStyle(color = ColorProvider(Color(0xFFC9A227)), fontSize = 14.sp))
         Spacer(GlanceModifier.width(8.dp))
         Column {
             Text(
-                top?.let { translator.display(it.title, it.lang) } ?: "Abra o WID para carregar",
-                style = TextStyle(color = ColorProvider(Color(0xFFF2F2F2)), fontWeight = FontWeight.Bold, fontSize = 13.sp),
+                top?.let { translator.display(it.title, it.lang) } ?: "Abra o Argos para carregar",
+                style = TextStyle(color = ColorProvider(Color(0xFFE8E2D0)), fontWeight = FontWeight.Bold, fontSize = 13.sp),
                 maxLines = 2,
             )
             if (top != null) {
                 Text(
                     "${top.source} · ${relativeTime(top.updated)}",
-                    style = TextStyle(color = ColorProvider(Color(0xFF9AA0A6)), fontSize = 10.sp),
+                    style = TextStyle(color = ColorProvider(Color(0xFF8A8578)), fontSize = 10.sp),
                     maxLines = 1,
                 )
             }

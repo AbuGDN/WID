@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#FFFAFAFA</color>
-    <color name="accent">#FFC62828</color>
-    <color name="icon_bg">#FF121416</color>
+    <!-- Paleta Argos: preto profundo, ouro antigo. -->
+    <color name="bg">#FF050505</color>
+    <color name="accent">#FFC9A227</color>
+    <color name="icon_bg">#FF050505</color>
 </resources>

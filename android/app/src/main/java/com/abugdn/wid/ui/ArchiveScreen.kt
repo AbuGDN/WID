@@ -60,7 +60,7 @@ fun ArchiveScreen(onOpen: (String) -> Unit) {
     ) { padding ->
         PullToRefreshBox(isRefreshing = loading, onRefresh = { load() }, modifier = Modifier.padding(padding).fillMaxSize()) {
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                if (error) item { Text("Sem conexão.", color = Red, modifier = Modifier.padding(16.dp)) }
+                if (error) item { Text("Sem conexão.", color = Accent, modifier = Modifier.padding(16.dp)) }
                 if (archive.isNullOrEmpty() && !loading) {
                     item { Text("Nada no arquivo ainda. O servidor guarda um dia por vez a partir de 24/09/2026.", modifier = Modifier.padding(24.dp)) }
                 }
@@ -74,7 +74,7 @@ fun ArchiveScreen(onOpen: (String) -> Unit) {
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         ) {
                             Column(Modifier.padding(16.dp)) {
-                                Text("RESUMO DA SEMANA", style = MaterialTheme.typography.labelMedium, color = Red, fontWeight = FontWeight.Bold)
+                                Text("RESUMO DA SEMANA", style = MaterialTheme.typography.labelMedium, color = Accent, fontWeight = FontWeight.Bold)
                                 week.forEachIndexed { i, day ->
                                     Column(Modifier.fillMaxWidth().clickable { onOpen(day.top.id) }.padding(vertical = 8.dp)) {
                                         Text(
@@ -98,7 +98,7 @@ fun ArchiveScreen(onOpen: (String) -> Unit) {
                         Text(
                             dayLabel(day.date).uppercase(),
                             style = MaterialTheme.typography.labelMedium,
-                            color = Red,
+                            color = Accent,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(start = 16.dp, top = 12.dp),
                         )
@@ -130,7 +130,7 @@ private fun YourWeekCard(onOpen: (String) -> Unit) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text("SUA SEMANA", style = MaterialTheme.typography.labelMedium, color = Red, fontWeight = FontWeight.Bold)
+            Text("SUA SEMANA", style = MaterialTheme.typography.labelMedium, color = Accent, fontWeight = FontWeight.Bold)
             Text(
                 when (stories) {
                     0 -> "Você ainda não leu nenhuma notícia nos últimos 7 dias."

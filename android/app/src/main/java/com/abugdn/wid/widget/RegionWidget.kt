@@ -77,26 +77,26 @@ private fun RegionBody(label: String, top: Cluster?, title: String?, tension: St
         actionStartActivity<MainActivity>()
     }
     Column(
-        GlanceModifier.fillMaxSize().background(Color(0xFF15181B)).cornerRadius(16.dp).padding(14.dp).clickable(action),
+        GlanceModifier.fillMaxSize().background(Color(0xFF050505)).cornerRadius(16.dp).padding(14.dp).clickable(action),
     ) {
         Text(
             label.uppercase() + " · PRINCIPAL",
-            style = TextStyle(color = ColorProvider(Color(0xFFE53935)), fontWeight = FontWeight.Bold, fontSize = 11.sp),
+            style = TextStyle(color = ColorProvider(Color(0xFFC9A227)), fontWeight = FontWeight.Bold, fontSize = 11.sp),
         )
         if (tension != null) {
-            Text(tension, style = TextStyle(color = ColorProvider(Color(0xFFFFB300)), fontSize = 10.sp), maxLines = 1)
+            Text(tension, style = TextStyle(color = ColorProvider(Color(0xFFC9A227)), fontSize = 10.sp), maxLines = 1)
         }
         Spacer(GlanceModifier.height(4.dp))
         Text(
             title ?: "Nenhuma notícia de $label nas últimas 48 h",
-            style = TextStyle(color = ColorProvider(Color(0xFFF2F2F2)), fontWeight = FontWeight.Bold, fontSize = 15.sp),
+            style = TextStyle(color = ColorProvider(Color(0xFFE8E2D0)), fontWeight = FontWeight.Bold, fontSize = 15.sp),
             maxLines = 4,
         )
         if (top != null) {
             Spacer(GlanceModifier.height(4.dp))
             Text(
                 "${top.source} · ${top.sourcesCount} veículos · ${relativeTime(top.updated)}",
-                style = TextStyle(color = ColorProvider(Color(0xFF9AA0A6)), fontSize = 11.sp),
+                style = TextStyle(color = ColorProvider(Color(0xFF8A8578)), fontSize = 11.sp),
                 maxLines = 1,
             )
         }

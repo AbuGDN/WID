@@ -18,7 +18,8 @@ data class Settings(
     val quietHours: Boolean = true,
     val quietStart: Int = 22,
     val quietEnd: Int = 7,
-    val theme: ThemeMode = ThemeMode.SYSTEM,
+    /** Identidade Argos: escuro por padrão. */
+    val theme: ThemeMode = ThemeMode.DARK,
     /** Termos que sempre geram notificação quando aparecem numa notícia. */
     val watchWords: Set<String> = emptySet(),
     /** Multiplicador do tamanho do texto em todo o app. */
@@ -88,7 +89,7 @@ class SettingsStore(private val prefs: SharedPreferences) {
         quietHours = prefs.getBoolean("s_quiet", true),
         quietStart = prefs.getInt("s_quiet_start", 22),
         quietEnd = prefs.getInt("s_quiet_end", 7),
-        theme = runCatching { ThemeMode.valueOf(prefs.getString("s_theme", null)!!) }.getOrDefault(ThemeMode.SYSTEM),
+        theme = runCatching { ThemeMode.valueOf(prefs.getString("s_theme", null)!!) }.getOrDefault(ThemeMode.DARK),
         watchWords = prefs.getStringSet("s_watch", emptySet())!!.toSet(),
         textScale = prefs.getFloat("s_text_scale", 1f),
         weeklyDigest = prefs.getBoolean("s_weekly", true),

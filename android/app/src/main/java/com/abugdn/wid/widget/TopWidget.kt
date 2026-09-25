@@ -37,10 +37,10 @@ import com.abugdn.wid.ui.EXTRA_CLUSTER_ID
 import com.abugdn.wid.ui.MainActivity
 import com.abugdn.wid.ui.relativeTime
 
-private val BG = Color(0xFF15181B)
-private val RED = Color(0xFFE53935)
-private val WHITE = Color(0xFFF2F2F2)
-private val GREY = Color(0xFF9AA0A6)
+private val BG = Color(0xFF050505)
+private val GOLD = Color(0xFFC9A227)
+private val WHITE = Color(0xFFE8E2D0)
+private val GREY = Color(0xFF8A8578)
 
 private val SMALL = DpSize(180.dp, 110.dp)
 private val LARGE = DpSize(250.dp, 200.dp)
@@ -67,7 +67,7 @@ private fun WidgetBody(feed: Feed?, translator: Translator) {
     val base = GlanceModifier.fillMaxSize().background(BG).cornerRadius(16.dp).padding(14.dp)
     if (top == null) {
         Column(modifier = base.clickable(actionStartActivity<MainActivity>())) {
-            Text("WID", style = TextStyle(color = ColorProvider(RED), fontWeight = FontWeight.Bold, fontSize = 12.sp))
+            Text("ARGOS", style = TextStyle(color = ColorProvider(GOLD), fontWeight = FontWeight.Bold, fontSize = 12.sp))
             Text("Abra o app para carregar as notícias", style = TextStyle(color = ColorProvider(WHITE), fontSize = 14.sp))
         }
         return
@@ -76,7 +76,7 @@ private fun WidgetBody(feed: Feed?, translator: Translator) {
     Column(modifier = base.clickable(open)) {
         Text(
             "PRINCIPAL DO DIA",
-            style = TextStyle(color = ColorProvider(RED), fontWeight = FontWeight.Bold, fontSize = 11.sp),
+            style = TextStyle(color = ColorProvider(GOLD), fontWeight = FontWeight.Bold, fontSize = 11.sp),
         )
         Spacer(GlanceModifier.height(4.dp))
         Text(

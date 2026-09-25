@@ -1,7 +1,18 @@
-# CLAUDE.md — contexto do projeto WID
+# CLAUDE.md — contexto do projeto Argos (antigo WID)
 
 Leia o `README.md` para a visão geral e o setup. Este arquivo guarda o que um assistente precisa saber
 para continuar o trabalho sem redescobrir tudo.
+
+## Identidade
+
+- Nome **Argos** (o gigante de cem olhos), slogan "Cem olhos sobre a guerra". Visual "conspiracionista":
+  logo = olho no triângulo (Olho da Providência), paleta "Ordem" em `ui/Theme.kt`: preto `#050505`,
+  ouro antigo `Accent #C9A227`, osso `#E8E2D0`, cinza `#8A8578`, vermelho-sangue `Alert #B3122E`
+  **só** para alertas. Títulos em serifa. Tema escuro é o padrão.
+- O pacote `com.abugdn.wid`, a pasta `backend/wid` e `WID_VERSION_CODE` ficam com o nome antigo de
+  propósito (mudar o applicationId quebraria as atualizações).
+- O app tenta `AbuGDN/Argos` e cai para `AbuGDN/WID` (dados e Releases), então funciona antes e depois
+  da troca de nome do repositório.
 
 ## O projeto em uma frase
 

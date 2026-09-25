@@ -217,7 +217,7 @@ object Notifier {
         val pending = PendingIntent.getActivity(context, UPDATE_ID, intent, PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(context, CHANNEL_UPDATE)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("WID ${update.versionName} disponível")
+            .setContentTitle("Argos ${update.versionName} disponível")
             .setContentText("Toque para abrir o app e atualizar.")
             .setContentIntent(pending)
             .setAutoCancel(true)
@@ -259,7 +259,7 @@ object Notifier {
         // Resumo do grupo: silencioso, só junta as notificações acima.
         val summary = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("WID")
+            .setContentTitle("Argos")
             .setContentText("Novas notícias")
             .setStyle(NotificationCompat.InboxStyle().setSummaryText("notícias de guerra"))
             .setGroup(GROUP)

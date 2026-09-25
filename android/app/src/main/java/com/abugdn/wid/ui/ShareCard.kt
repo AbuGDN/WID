@@ -65,7 +65,7 @@ suspend fun shareAsImage(context: Context, cluster: Cluster) {
 private fun drawCard(cluster: Cluster, title: String, photo: Bitmap?): Bitmap {
     val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    canvas.drawColor(0xFF121416.toInt())
+    canvas.drawColor(0xFF050505.toInt())
     var y = 110f
 
     if (photo != null) {
@@ -77,18 +77,21 @@ private fun drawCard(cluster: Cluster, title: String, photo: Bitmap?): Bitmap {
         val top = (photo.height - srcH) / 2
         canvas.drawBitmap(photo, Rect(left, top, left + srcW, top + srcH), Rect(0, 0, W, PHOTO_H), Paint(Paint.FILTER_BITMAP_FLAG))
         val fade = Paint().apply {
-            shader = LinearGradient(0f, PHOTO_H * 0.45f, 0f, PHOTO_H.toFloat(), 0x00121416, 0xFF121416.toInt(), Shader.TileMode.CLAMP)
+            shader = LinearGradient(0f, PHOTO_H * 0.45f, 0f, PHOTO_H.toFloat(), 0x00050505, 0xFF050505.toInt(), Shader.TileMode.CLAMP)
         }
         canvas.drawRect(0f, 0f, W.toFloat(), PHOTO_H.toFloat(), fade)
         y = PHOTO_H + 30f
     }
 
-    val red = 0xFFE53935.toInt()
-    val label = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = red; textSize = 34f; typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f }
-    canvas.drawText("WID · NOTÍCIAS DE GUERRA", 60f, y, label)
+    val gold = 0xFFC9A227.toInt()
+    val label = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = gold; textSize = 34f; typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f }
+    canvas.drawText("ARGOS · CEM OLHOS SOBRE A GUERRA", 60f, y, label)
     y += 40f
 
-    val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFF2F2F2.toInt(); textSize = if (photo != null) 62f else 76f; typeface = Typeface.DEFAULT_BOLD }
+    val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFE8E2D0.toInt(); textSize = if (photo != null) 62f else 76f
+        typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+    }
     val maxLines = if (photo != null) 6 else 9
     val layout = StaticLayout.Builder.obtain(title, 0, title.length, titlePaint, W - 120)
         .setAlignment(Layout.Alignment.ALIGN_NORMAL)
@@ -105,15 +108,45 @@ private fun drawCard(cluster: Cluster, title: String, photo: Bitmap?): Bitmap {
     val date = runCatching {
         DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault()).format(Instant.parse(cluster.updated))
     }.getOrDefault("")
-    val meta = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF9AA0A6.toInt(); textSize = 36f }
+    val meta = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF8A8578.toInt(); textSize = 36f }
     canvas.drawText(
         "${cluster.source} · ${cluster.sourcesCount} ${if (cluster.sourcesCount == 1) "veículo" else "veículos"} · $date",
         60f, y, meta,
     )
 
-    val bar = Paint().apply { color = red }
-    canvas.drawRect(60f, H - 120f, 180f, H - 112f, bar)
-    val footer = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF9AA0A6.toInt(); textSize = 30f }
-    canvas.drawText("Compartilhado pelo app WID", 60f, H - 64f, footer)
+    // Rodapé: o olho no triângulo + assinatura.
+    drawArgosEye(canvas, 100f, H - 96f, 80f, gold)
+    val brand = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = gold; textSize = 40f; typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD); letterSpacing = 0.25f
+    }
+    canvas.drawText("ARGOS", 160f, H - 92f, brand)
+    val footer = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF8A8578.toInt(); textSize = 28f }
+    canvas.drawText("Cem olhos sobre a guerra", 160f, H - 54f, footer)
     return bitmap
+}
+
+/** Logo Argos: triângulo com o olho no centro, desenhado centrado em (cx, cy) com lado [size]. */
+fun drawArgosEye(canvas: Canvas, cx: Float, cy: Float, size: Float, color: Int) {
+    val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color; style = Paint.Style.STROKE; strokeWidth = size * 0.06f; strokeJoin = Paint.Join.ROUND
+    }
+    val h = size * 0.866f
+    val triangle = android.graphics.Path().apply {
+        moveTo(cx, cy - h * 0.62f)
+        lineTo(cx + size / 2, cy + h * 0.38f)
+        lineTo(cx - size / 2, cy + h * 0.38f)
+        close()
+    }
+    canvas.drawPath(triangle, stroke)
+    // Olho amendoado no centro de massa do triângulo.
+    val ey = cy + h * 0.05f
+    val w = size * 0.28f
+    val eye = android.graphics.Path().apply {
+        moveTo(cx - w, ey)
+        quadTo(cx, ey - w * 0.9f, cx + w, ey)
+        quadTo(cx, ey + w * 0.9f, cx - w, ey)
+        close()
+    }
+    canvas.drawPath(eye, stroke.apply { strokeWidth = size * 0.045f })
+    canvas.drawCircle(cx, ey, w * 0.34f, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color })
 }
