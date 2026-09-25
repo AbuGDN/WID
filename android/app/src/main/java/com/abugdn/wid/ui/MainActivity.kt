@@ -130,6 +130,7 @@ private fun App(
     var regionOpen by rememberSaveable { mutableStateOf<String?>(null) }
     var vigilOpen by rememberSaveable { mutableStateOf(false) }
     var bulletinOpen by rememberSaveable { mutableStateOf(false) }
+    var clockOpen by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(shortcut) {
         val request = shortcut ?: return@LaunchedEffect
         if (!request.startsWith("region:")) return@LaunchedEffect
@@ -148,6 +149,7 @@ private fun App(
             "saved" -> { settingsOpen = false; tab = Tab.SAVED }
             "bulletin" -> { settingsOpen = false; bulletinOpen = true }
             "vigil" -> { settingsOpen = false; vigilOpen = true }
+            "clock" -> { settingsOpen = false; clockOpen = true }
             else -> return@LaunchedEffect
         }
         onShortcutHandled()
@@ -166,7 +168,7 @@ private fun App(
 
     Scaffold(
         bottomBar = {
-            val overlay = settingsOpen || storyOpen || regionOpen != null || missedOpen || vigilOpen || bulletinOpen
+            val overlay = settingsOpen || storyOpen || regionOpen != null || missedOpen || vigilOpen || bulletinOpen || clockOpen
             if (openCluster == null && !overlay) {
                 NavigationBar {
                     Tab.entries.forEach { t ->
@@ -181,7 +183,16 @@ private fun App(
             }
         },
     ) { padding ->
+        // Ficha de armamento → "ver alcance no mapa": fecha o que estiver aberto e vai para o Mapa.
+        val openMap: (String) -> Unit = { id ->
+            repo.mapFocus.value = id
+            onOpenCluster(null)
+            settingsOpen = false; storyOpen = false; regionOpen = null; missedOpen = false
+            vigilOpen = false; bulletinOpen = false; clockOpen = false
+            tab = Tab.MAP
+        }
         // O "dia em 1 minuto" ocupa a tela inteira, inclusive atrás da barra de navegação.
+        CompositionLocalProvider(LocalOpenMap provides openMap) {
         Box(Modifier.padding(bottom = if (storyOpen) 0.dp else padding.calculateBottomPadding())) {
             when {
                 openCluster != null -> {
@@ -209,6 +220,10 @@ private fun App(
                     BackHandler { vigilOpen = false }
                     VigilScreen(onBack = { vigilOpen = false }, onOpen = { onOpenCluster(it) }, onRegion = { regionOpen = it })
                 }
+                clockOpen -> {
+                    BackHandler { clockOpen = false }
+                    ClockScreen(onBack = { clockOpen = false }, onRegion = { regionOpen = it })
+                }
                 bulletinOpen -> {
                     BackHandler { bulletinOpen = false }
                     BulletinScreen(onBack = { bulletinOpen = false })
@@ -232,6 +247,7 @@ private fun App(
                             onStory = { storyOpen = true },
                             searchRequest = searchRequest,
                             onRegion = { regionOpen = it },
+                            onClock = { clockOpen = true },
                         )
                         Tab.MAP -> MapScreen(onRegion = { regionOpen = it }, onOpen = { onOpenCluster(it) })
                         Tab.ARCHIVE -> ArchiveScreen(
@@ -243,6 +259,7 @@ private fun App(
                     }
                 }
             }
+        }
         }
     }
 }

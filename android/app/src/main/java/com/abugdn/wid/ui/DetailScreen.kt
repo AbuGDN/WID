@@ -159,6 +159,14 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
             Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()),
         ) {
             NewsImage(cluster, Modifier.fillMaxWidth().aspectRatio(16f / 9f))
+            val image = cluster.image
+            if (image != null && !LocalDataSaver.current) {
+                // Busca reversa: mostra se a foto já circulou antes (outra data, outro conflito).
+                TextButton(
+                    onClick = { openUrl(context, "https://lens.google.com/uploadbyurl?url=" + java.net.URLEncoder.encode(image, "UTF-8")) },
+                    modifier = Modifier.padding(start = 8.dp),
+                ) { Text("🔍 Checar esta imagem (busca reversa)", style = MaterialTheme.typography.labelMedium) }
+            }
             Column(Modifier.padding(16.dp)) {
                 if (cluster.urgent) {
                     Text("URGENTE", color = Alert, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
@@ -186,6 +194,7 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
                 }
                 ContextChips(cluster, onOpen, onRegion)
                 SidesCard(cluster)
+                EditsCard(cluster)
                 FiguresCard(cluster)
                 SagaCard(cluster, onOpen)
                 if (isSaved) SavedMetaSection(cluster.id)
@@ -264,7 +273,13 @@ fun DetailScreen(cluster: Cluster, onBack: () -> Unit, onOpen: (String) -> Unit,
     }
 }
 
-/** Chips "ⓘ Hamas", "ⓘ Gaza"… que abrem um cartão de contexto. */
+private fun actorIcon(a: com.abugdn.wid.data.Actor): String = when {
+    isPerson(a) -> "👤 "
+    a.key in com.abugdn.wid.data.WEAPON_SHEETS -> "🔫 "
+    else -> "ⓘ "
+}
+
+/** Chips "ⓘ Hamas", "🔫 Shahed", "👤 Netanyahu", "🌍 Gaza"… que abrem um cartão de contexto. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ContextChips(cluster: Cluster, onOpen: (String) -> Unit, onRegion: (String) -> Unit) {
@@ -277,7 +292,7 @@ private fun ContextChips(cluster: Cluster, onOpen: (String) -> Unit, onRegion: (
 
     FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         actors.forEach { a ->
-            AssistChip(onClick = { openActor = a }, label = { Text((if (isPerson(a)) "👤 " else "ⓘ ") + a.name) })
+            AssistChip(onClick = { openActor = a }, label = { Text(actorIcon(a) + a.name) })
         }
         regions.forEach { tag ->
             AssistChip(onClick = { onRegion(tag) }, label = { Text("🌍 ${TAG_LABELS[tag] ?: tag}") })

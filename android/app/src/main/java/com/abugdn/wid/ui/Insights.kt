@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -272,5 +273,178 @@ fun FirstRankingCard(stats: FirstStats, modifier: Modifier = Modifier) {
                 )
             }
         }
+    }
+}
+
+/** Veículos que trocaram a manchete do mesmo link depois de publicar: antes → agora. */
+@Composable
+fun EditsCard(cluster: Cluster) {
+    val edited = cluster.articles.filter { it.edits.isNotEmpty() }
+    if (edited.isEmpty()) return
+    val translator = LocalContext.current.repository.translator
+    InsightCard {
+        CardTitle("✏ MANCHETE ALTERADA")
+        Text(
+            "O veículo mudou o título depois de publicar. Mudanças de palavra (\"ataque\" → \"suposto ataque\") dizem muito.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        edited.forEach { a ->
+            Text(a.source, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+            a.edits.forEach { e ->
+                Text(
+                    "Antes" + (if (e.at.isNotBlank()) " (até ${dayClock(e.at)})" else "") + ": " + translator.display(e.title, a.lang),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough,
+                )
+            }
+            Text("Agora: " + translator.display(a.title, a.lang), style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+/**
+ * Barras dos últimos dias de um índice 0–100 (tensão de uma região ou relógio global).
+ * Picos críticos (75+) em vermelho, com o valor escrito em cima.
+ */
+@Composable
+fun TensionHistoryChart(values: List<Pair<String, Int>>, modifier: Modifier = Modifier, compact: Boolean = false) {
+    if (values.isEmpty()) {
+        Text(
+            "O histórico de tensão começa a ser gravado com esta versão; o gráfico enche com os dias.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = modifier,
+        )
+        return
+    }
+    val levels = values.map { (_, v) -> tensionColor(levelOf(v)) }
+    val peak = values.maxOf { it.second }
+    Column(modifier) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(if (compact) 32.dp else 90.dp)) {
+            val slot = size.width / values.size.coerceAtLeast(if (compact) 1 else 7)
+            val bar = slot * 0.7f
+            values.forEachIndexed { i, (_, v) ->
+                val h = (size.height * v / 100f).coerceAtLeast(2.dp.toPx())
+                drawRect(
+                    color = levels[i],
+                    topLeft = androidx.compose.ui.geometry.Offset(i * slot + (slot - bar) / 2, size.height - h),
+                    size = androidx.compose.ui.geometry.Size(bar, h),
+                )
+            }
+            // Linha dos 75 (crítica).
+            val y = size.height * 0.25f
+            drawLine(Alert.copy(alpha = 0.5f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width, y), strokeWidth = 1.dp.toPx())
+        }
+        if (!compact) Row(Modifier.fillMaxWidth()) {
+            Text(dayLabel(values.first().first), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+            Text(
+                "pico ${peak} · linha vermelha = crítica (75)",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (peak >= 75) Alert else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+fun levelOf(score: Int): String = when {
+    score >= 75 -> "crítica"
+    score >= 50 -> "alta"
+    score >= 25 -> "moderada"
+    else -> "baixa"
+}
+
+/** Relógio do Argos: índice global com a região que mais puxa. */
+@Composable
+fun ArgosClock(clock: com.abugdn.wid.data.GlobalClock, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    val color = tensionColor(clock.level)
+    Card(
+        modifier = modifier.fillMaxWidth().let { if (onClick != null) it.clickable(onClick = onClick) else it },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "${clock.index}",
+                style = MaterialTheme.typography.displaySmall,
+                color = color,
+                fontWeight = FontWeight.Black,
+            )
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text("👁 RELÓGIO DO ARGOS · ${clock.level.uppercase()}", style = MaterialTheme.typography.labelMedium, color = Accent, fontWeight = FontWeight.Bold)
+                LinearProgressIndicator(
+                    progress = { clock.index / 100f },
+                    color = color,
+                    trackColor = color.copy(alpha = 0.2f),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).height(6.dp),
+                )
+                Text(
+                    "Tensão global · puxado por ${com.abugdn.wid.data.TAG_LABELS[clock.leader] ?: clock.leader}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** Contador de trégua de uma região: dias desde o início e última violação relatada (da vigília). */
+@Composable
+fun TruceCards(tag: String) {
+    val repo = LocalContext.current.repository
+    val ended by repo.endedTruces.collectAsStateWithLifecycle()
+    val vigil by repo.vigil.collectAsStateWithLifecycle()
+    com.abugdn.wid.data.TRUCES.filter { tag in it.tags }.forEach { truce ->
+        TruceCard(truce, truce.key in ended, vigil) { repo.setTruceEnded(truce.key, it) }
+    }
+}
+
+@Composable
+fun TruceCard(
+    truce: com.abugdn.wid.data.Truce,
+    ended: Boolean,
+    vigil: List<com.abugdn.wid.data.VigilEvent>,
+    onEnded: (Boolean) -> Unit,
+) {
+    val zone = java.time.ZoneId.systemDefault()
+    val startMs = truce.start.atStartOfDay(zone).toInstant().toEpochMilli()
+    val violations = vigil.filter { it.kind == "truce" && it.region in truce.tags && it.time >= startMs }
+    val weekAgo = System.currentTimeMillis() - 7 * 86_400_000L
+    val recent = violations.count { it.time >= weekAgo }
+    InsightCard {
+        if (ended) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🕊 ${truce.label}: marcada como encerrada", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                TextButton(onClick = { onEnded(false) }) { Text("Reativar") }
+            }
+            return@InsightCard
+        }
+        val days = java.time.temporal.ChronoUnit.DAYS.between(truce.start, java.time.LocalDate.now(zone)) + 1
+        val day = NumberFormat.getIntegerInstance(Locale("pt", "BR")).format(days)
+        CardTitle("🕊 ${truce.label.uppercase()} · DIA $day")
+        Text(
+            "desde ${truce.start.dayOfMonth}/${truce.start.monthValue}/${truce.start.year}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val last = violations.maxByOrNull { it.time }
+        Text(
+            if (last == null) "Nenhuma violação relatada desde que o Argos começou a vigiar."
+            else "⚠ Última violação relatada: ${dayClock(java.time.Instant.ofEpochMilli(last.time).toString())}" +
+                if (recent > 0) " · $recent relato(s) em 7 dias" else "",
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (recent > 0) Alert else MaterialTheme.colorScheme.onSurface,
+            fontWeight = if (recent > 0) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        Text(
+            com.abugdn.wid.data.TRUCE_DISCLAIMER,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        TextButton(onClick = { onEnded(true) }) { Text("Trégua encerrada") }
     }
 }

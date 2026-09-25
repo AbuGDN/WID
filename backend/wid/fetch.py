@@ -5,7 +5,7 @@ import hashlib
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -38,9 +38,11 @@ class Article:
     published: datetime
     image: str | None = None
     origin: str = "internacional"
+    # Manchetes anteriores deste mesmo link: [{"title": antiga, "at": quando mudou}].
+    edits: list[dict] = field(default_factory=list)
 
     def to_json(self) -> dict:
-        return {
+        data = {
             "id": self.id,
             "title": self.title,
             "summary": self.summary,
@@ -51,6 +53,9 @@ class Article:
             "image": self.image,
             "origin": self.origin,
         }
+        if self.edits:
+            data["edits"] = self.edits
+        return data
 
     @classmethod
     def from_json(cls, data: dict, weight: float = 1.0, origin: str | None = None) -> "Article":
@@ -66,6 +71,7 @@ class Article:
             published=parse_iso(data["published"]),
             image=data.get("image"),
             origin=origin or data.get("origin", "internacional"),
+            edits=data.get("edits", []),
         )
 
 

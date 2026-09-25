@@ -189,3 +189,41 @@ def test_hebrew_and_arabic_are_relevant_and_share_tokens_with_english():
     assert {"attack", "gaza", "israel", "killed", "palestinian"} <= tokens(ar) & en
     assert {"attack", "gaza", "killed", "idf"} <= tokens(he)
     assert tokens("وقف إطلاق النار في لبنان وحزب الله") >= {"ceasefire", "lebanon", "hezbollah"}
+
+
+def test_changed_headline_is_kept_as_edit():
+    from datetime import timedelta
+
+    from wid.build import merge
+    from wid.fetch import Article
+
+    now = datetime(2026, 9, 25, 12, tzinfo=timezone.utc)
+    old = Article("a1", "Israel strikes Gaza hospital", "", "https://x/a", "X", "en", 1.0, now - timedelta(hours=2))
+    same = Article("a1", "Israel strikes Gaza hospital.", "", "https://x/a", "X", "en", 1.0, now)
+    new = Article("a1", "Israel says it struck Hamas site near Gaza hospital", "", "https://x/a", "X", "en", 1.0, now)
+
+    kept = merge([old], [same], now)[0]
+    assert kept.edits == [] and kept.title == "Israel strikes Gaza hospital"
+    changed = merge([old], [new], now)[0]
+    assert changed.title.startswith("Israel says")
+    assert changed.edits == [{"title": "Israel strikes Gaza hospital", "at": "2026-09-25T12:00:00Z"}]
+    assert changed.published == old.published
+    assert changed.to_json()["edits"][0]["title"] == "Israel strikes Gaza hospital"
+
+
+def test_global_clock_and_daily_tension_peaks(tmp_path):
+    from wid.build import global_index, record_tension, write_stats
+
+    regions = {"gaza": {"tension": 80}, "libano": {"tension": 60}, "iemen": {"tension": 40}, "siria": {"tension": 10}}
+    clock = global_index(regions)
+    assert clock == {"index": 72, "level": "alta", "leader": "gaza"}
+    assert global_index({}) is None
+
+    today = datetime(2026, 9, 25).date()
+    days = write_stats(tmp_path, today, [])
+    record_tension(tmp_path, days, regions, clock)
+    # Rodada seguinte, mais calma: o pico do dia continua.
+    days = write_stats(tmp_path, today, [])
+    record_tension(tmp_path, days, {"gaza": {"tension": 30}}, {"index": 30})
+    saved = json.loads((tmp_path / "stats" / "daily.json").read_text())["days"][-1]
+    assert saved["tension"]["gaza"] == 80 and saved["global"] == 72

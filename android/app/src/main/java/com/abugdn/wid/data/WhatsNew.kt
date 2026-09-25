@@ -11,6 +11,19 @@ data class ChangelogEntry(val versionCode: Long, val items: List<String>)
 
 val CHANGELOG = listOf(
     ChangelogEntry(
+        18,
+        listOf(
+            "👁 Relógio do Argos: tensão global de 0 a 100 no topo da tela Hoje, com tela própria, widget novo e aviso quando sobe para alta ou crítica.",
+            "📈 Histórico de tensão: gráfico de 30 dias por região e do relógio, com os picos da vigília marcados.",
+            "✏ Manchete alterada: quando um veículo troca o título depois de publicar, o Argos mostra o antes e o depois.",
+            "📍 Mapa por cidade: Rafah, Khan Younis, Beirute, Isfahan, Kharkiv, Sanaa... com as notícias de cada uma.",
+            "🔫 Ficha de armamentos: origem, tipo, alcance e onde foi usada, com atalho para o círculo de alcance no mapa. 10 armas novas no glossário.",
+            "💬 Quem disse o quê: frases entre aspas de Netanyahu, Khamenei, Trump, Putin e outros, na ficha de cada pessoa.",
+            "🔍 Checar imagem: busca reversa da foto da notícia (Google Lens), para ver se ela é antiga ou de outro lugar.",
+            "🕊 Contador de trégua: dias de cessar-fogo em Gaza, no Líbano e entre Israel e Irã, com as violações relatadas. Dá para esconder uma trégua que já acabou.",
+        ),
+    ),
+    ChangelogEntry(
         17,
         listOf(
             "🖼 Cartão de compartilhar mais limpo: só o nome ARGOS em cima e o ícone do olho embaixo, sem slogan.",

@@ -33,6 +33,10 @@ import com.abugdn.wid.data.MILESTONES
 import com.abugdn.wid.data.Milestone
 import com.abugdn.wid.data.REGION_CONTEXT
 import com.abugdn.wid.data.TAG_LABELS
+import com.abugdn.wid.data.QuoteEntry
+import com.abugdn.wid.data.WEAPON_SHEETS
+import com.abugdn.wid.data.WeaponSheet
+import androidx.compose.ui.text.font.FontStyle
 
 /** Cartão de contexto: explicação e, para regiões, os marcos históricos. */
 @Composable
@@ -43,6 +47,7 @@ fun ContextDialog(
     related: List<Cluster> = emptyList(),
     onOpen: ((String) -> Unit)? = null,
     footer: String = CONTEXT_DISCLAIMER,
+    extra: (@Composable () -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     val translator = LocalContext.current.repository.translator
@@ -53,6 +58,7 @@ fun ContextDialog(
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(text)
+                extra?.invoke()
                 if (!milestones.isNullOrEmpty()) {
                     Spacer(Modifier.height(16.dp))
                     Text("Marcos", style = MaterialTheme.typography.titleSmall, color = Accent, fontWeight = FontWeight.Bold)
@@ -96,7 +102,61 @@ fun ActorContextDialog(actor: Actor, onOpen: ((String) -> Unit)?, exclude: Strin
     val repo = LocalContext.current.repository
     val feed by repo.feed.collectAsStateWithLifecycle()
     val related = remember(actor.key, feed) { actor.related(feed?.clusters.orEmpty(), repo.translator::cached, exclude) }
-    ContextDialog(actor.name, actor.text, null, related = related, onOpen = onOpen, onDismiss = onDismiss)
+    val quotes by repo.quotes.collectAsStateWithLifecycle()
+    val said = quotes.filter { it.person == actor.key }.take(6)
+    val sheet = WEAPON_SHEETS[actor.key]
+    val openMap = LocalOpenMap.current
+    ContextDialog(
+        actor.name, actor.text, null, related = related, onOpen = onOpen,
+        extra = {
+            if (sheet != null) WeaponSheetBlock(sheet) { onDismiss(); openMap(it) }
+            if (said.isNotEmpty()) SaidBlock(said) { id -> onDismiss(); onOpen?.invoke(id) }
+        },
+        onDismiss = onDismiss,
+    )
+}
+
+/** Ficha técnica: origem, tipo, alcance, onde foi usada e o atalho para o círculo no mapa. */
+@Composable
+private fun WeaponSheetBlock(sheet: WeaponSheet, onMap: (String) -> Unit) {
+    Spacer(Modifier.height(16.dp))
+    Text("🔫 Ficha", style = MaterialTheme.typography.titleSmall, color = Accent, fontWeight = FontWeight.Bold)
+    listOf("Origem" to sheet.origin, "Tipo" to sheet.type, "Alcance" to sheet.range, "Usada em" to sheet.usedIn).forEach { (k, v) ->
+        Row(Modifier.padding(top = 6.dp)) {
+            Text(k, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.width(84.dp))
+            Text(v, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+    sheet.rangeId?.let { id ->
+        TextButton(onClick = { onMap(id) }, modifier = Modifier.padding(top = 4.dp)) { Text("🎯 Ver alcance no mapa") }
+    }
+}
+
+/** "O que disse": frases entre aspas atribuídas à pessoa nas manchetes e resumos. */
+@Composable
+private fun SaidBlock(said: List<QuoteEntry>, onOpen: (String) -> Unit) {
+    val repo = LocalContext.current.repository
+    Spacer(Modifier.height(16.dp))
+    Text("💬 O que disse", style = MaterialTheme.typography.titleSmall, color = Accent, fontWeight = FontWeight.Bold)
+    said.forEach { q ->
+        Column(
+            Modifier.fillMaxWidth()
+                .clickable(enabled = repo.cluster(q.clusterId) != null) { onOpen(q.clusterId) }
+                .padding(vertical = 6.dp),
+        ) {
+            Text("“${q.text}”", style = MaterialTheme.typography.bodyMedium, fontStyle = FontStyle.Italic)
+            Text(
+                "${dayClock(java.time.Instant.ofEpochMilli(q.time).toString())} · ${q.source}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    Text(
+        "Frases entre aspas nas manchetes e resumos, ligadas ao nome pelo verbo (“disse”, “afirmou”...). Confira no texto original.",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 /** Perfil de um veículo: país, dono e linha editorial. */

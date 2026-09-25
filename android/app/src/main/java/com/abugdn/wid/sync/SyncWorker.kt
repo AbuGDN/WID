@@ -13,6 +13,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.abugdn.wid.repository
+import com.abugdn.wid.widget.ClockWidget
 import com.abugdn.wid.widget.CompactWidget
 import com.abugdn.wid.widget.RegionWidget
 import com.abugdn.wid.widget.TopWidget
@@ -29,9 +30,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         Notifier.handle(applicationContext, feed)
         Notifier.followed(applicationContext, repo.followUpdates(feed))
         Notifier.spikes(applicationContext, feed)
+        Notifier.clock(applicationContext, feed)
         TopWidget().updateAll(applicationContext)
         CompactWidget().updateAll(applicationContext)
         RegionWidget().updateAll(applicationContext)
+        ClockWidget().updateAll(applicationContext)
         // Com economia de dados, textos completos antecipados só fora da rede móvel.
         val metered = applicationContext.getSystemService(ConnectivityManager::class.java).isActiveNetworkMetered
         if (!repo.settings.value.dataSaver || !metered) runCatching { repo.prefetch(feed) }

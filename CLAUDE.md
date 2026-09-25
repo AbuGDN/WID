@@ -43,8 +43,10 @@ backend/                 Python 3.11 (feedparser, httpx, PyYAML). Rodar: python 
   wid/keywords.py        Match: relevante se ≥1 termo de guerra e (região ou ≥2 termos)
   wid/cluster.py         agrupamento guloso por sobreposição de tokens (janela 18 h), scores, lead()
   wid/analysis.py        figuras (mortos/feridos), enquadramento, lados ("opostos"/"um_lado"),
-                         tensão/anomalia, sagas, first.json
-  wid/build.py           orquestra; escreve feed.json, top.json, history/, stats/, sagas.json
+                         violação de trégua, tensão/anomalia, sagas, first.json
+  wid/build.py           orquestra; escreve feed.json (com "global" = Relógio do Argos), top.json,
+                         history/, stats/daily.json (com pico de tensão do dia), sagas.json;
+                         merge() guarda manchetes trocadas em article.edits
   tests/                 pytest com fixtures; rode sempre antes do push
 android/app/src/main/java/com/abugdn/wid/
   WidApp.kt              Application: Repository, canais, agenda workers
@@ -57,10 +59,12 @@ android/app/src/main/java/com/abugdn/wid/
   data/Milestones.kt, Conflicts.kt, WhatsNew.kt (CHANGELOG por versionCode)
   data/Translator.kt     ML Kit en/he/ar→pt; idioma detectado pelo alfabeto; um modelo por idioma
   data/Vigil.kt          registro de vigília (alertas com data/hora, vigil.json); Bulletin.kt: boletim semanal
-  data/Ranges.kt         alcance de mísseis/defesas desenhado no mapa
+  data/Ranges.kt         alcance de mísseis/defesas desenhado no mapa; Weapons.kt: fichas das armas
+  data/Cities.kt         cidades para o mapa "por cidade"; Truces.kt: contador de tréguas
+  data/Quotes.kt         "quem disse o quê" (aspas + verbo de fala + uma pessoa-chave, quotes.json)
   sync/                  SyncWorker (30 min), DigestWorker, Notifier, NotificationActionReceiver
   ui/                    Compose; MainActivity faz a navegação por estado (sem navigation-compose)
-  widget/                Glance: TopWidget, CompactWidget, RegionWidget (+ tela de configuração)
+  widget/                Glance: TopWidget, CompactWidget, RegionWidget (+ configuração), ClockWidget
 .github/workflows/
   update-feed.yml        coleta; ciclos de ~5 h (11 rodadas × 30 min); cada rodada pega o backend novo
   build-android.yml      compila e publica release v1.0.<run_number> a cada push em android/

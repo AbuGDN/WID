@@ -78,6 +78,7 @@ fun HomeScreen(
     onStory: () -> Unit,
     searchRequest: Int = 0,
     onRegion: (String) -> Unit = {},
+    onClock: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val repo = context.repository
@@ -247,6 +248,10 @@ fun HomeScreen(
                         }, onDismiss = { showWidgetHint = false })
                     }
                 }
+                val clock = feed?.global
+                if (clock != null && !searching && tag == null) {
+                    item { ArgosClock(clock, Modifier.padding(16.dp, 8.dp, 16.dp, 0.dp), onClick = onClock) }
+                }
                 if (top != null) {
                     item {
                         FilledTonalButton(onClick = onStory, modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
@@ -335,6 +340,7 @@ fun ClusterRow(c: Cluster, onOpen: (String) -> Unit) {
                 "NOVA".takeIf { isNew },
                 "+$addedSinceRead DESDE SUA LEITURA".takeIf { addedSinceRead > 0 },
                 sidesBadge(c),
+                "✏ MANCHETE ALTERADA".takeIf { c.articles.any { it.edits.isNotEmpty() } },
             )
             if (badges.isNotEmpty()) {
                 Text(badges.joinToString(" · "), color = if (c.urgent) Alert else Accent, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)

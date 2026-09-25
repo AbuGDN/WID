@@ -14,6 +14,8 @@
     <string name="widget_region_description">A principal notícia de uma região escolhida</string>
     <string name="widget_compact_name">Argos · Manchete</string>
     <string name="widget_compact_description">A principal do dia em uma linha</string>
+    <string name="widget_clock_name">Argos · Relógio</string>
+    <string name="widget_clock_description">Tensão global de 0 a 100</string>
     <string name="shortcut_story">O dia em 1 minuto</string>
     <string name="shortcut_search">Buscar</string>
     <string name="shortcut_saved">Salvos</string>

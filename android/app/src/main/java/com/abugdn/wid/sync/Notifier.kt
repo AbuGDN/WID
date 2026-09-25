@@ -155,6 +155,34 @@ object Notifier {
         }
     }
 
+    private val CLOCK_LEVELS = listOf("baixa", "moderada", "alta", "crítica")
+    private const val CLOCK_ID = 8_004
+    private const val CLOCK_INTERVAL_MS = 6 * 60 * 60 * 1000L
+
+    /** Relógio do Argos subiu para alta ou crítica (no máximo um aviso a cada 6 h). */
+    @SuppressLint("MissingPermission") // checado em canNotify
+    fun clock(context: Context, feed: Feed) {
+        val clock = feed.global ?: return
+        val prefs = context.repository.storage.prefs
+        val rank = CLOCK_LEVELS.indexOf(clock.level).coerceAtLeast(0)
+        val previous = prefs.getInt("clock_rank", -1)
+        prefs.edit().putInt("clock_rank", rank).apply()
+        if (previous < 0 || rank <= previous || rank < 2) return
+        if (!canNotify(context) || context.repository.settings.value.isQuiet()) return
+        val now = System.currentTimeMillis()
+        if (now - prefs.getLong("clock_notified_at", 0) < CLOCK_INTERVAL_MS) return
+        prefs.edit().putLong("clock_notified_at", now).apply()
+        val leader = TAG_LABELS[clock.leader] ?: clock.leader
+        val notification = NotificationCompat.Builder(context, CHANNEL_SPIKE)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("👁 Relógio do Argos subiu para ${clock.level}")
+            .setContentText("Tensão global ${clock.index} de 100 · puxada por $leader")
+            .setContentIntent(shortcutIntent(context, "clock"))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(CLOCK_ID, notification)
+    }
+
     /** História seguida ganhou veículos. Toca mesmo fora das regiões escolhidas (o usuário pediu). */
     fun followed(context: Context, updates: List<Pair<Cluster, Int>>) {
         if (context.repository.settings.value.isQuiet()) return

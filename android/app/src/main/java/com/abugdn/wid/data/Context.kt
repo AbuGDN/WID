@@ -168,6 +168,54 @@ val GLOSSARY = listOf(
         "Caça furtivo americano de quinta geração, usado por Israel (versão F-35I “Adir”) e por vários aliados. Teve papel " +
             "central nos ataques israelenses ao Irã.",
     ),
+    Actor(
+        "ira_balisticos", "Mísseis balísticos do Irã", listOf("shahab-3", "shahab 3", "sejjil", "emad missile", "míssil emad", "khorramshahr-4", "ghadr"),
+        "Família de mísseis balísticos de médio alcance do Irã (Shahab-3, Ghadr, Emad, Sejjil, Khorramshahr), com alcance de cerca " +
+            "de 2.000 km. Foram a base das salvas iranianas contra Israel em abril e outubro de 2024 e em junho de 2025.",
+    ),
+    Actor(
+        "fattah", "Fattah", listOf("fattah"),
+        "Míssil balístico iraniano apresentado em 2023 e chamado pelo Irã de hipersônico, com alcance de cerca de 1.400 km. " +
+            "O Irã disse tê-lo usado contra Israel em 2024 e 2025.",
+    ),
+    Actor(
+        "kheibar", "Kheibar Shekan", listOf("kheibar shekan", "kheibar-shekan", "khaibar shekan", "kheibar"),
+        "Míssil balístico iraniano de combustível sólido, com alcance de cerca de 1.450 km, usado nos ataques contra Israel.",
+    ),
+    Actor(
+        "fateh110", "Fateh-110 / M-600", listOf("fateh-110", "fateh 110", "m-600", "zolfaghar"),
+        "Míssil balístico iraniano de curto alcance (cerca de 300 km) e precisão relativamente alta. Versões foram repassadas ao " +
+            "Hezbollah (M-600, fabricado na Síria) e a outros aliados do Irã.",
+    ),
+    Actor(
+        "burkan", "Burkan / Palestina-2", listOf("burkan", "borkan", "palestine-2", "palestine 2", "palestina-2", "palestina 2"),
+        "Mísseis balísticos dos houthis, derivados de modelos iranianos (Qiam). As versões de longo alcance chegam a Israel a partir " +
+            "do Iêmen, a quase 2.000 km. Antes, foram usados contra a Arábia Saudita.",
+    ),
+    Actor(
+        "iskander", "Iskander-M", listOf("iskander"),
+        "Míssil balístico russo de curto alcance (cerca de 500 km), lançado de caminhões. Muito usado contra cidades e bases na Ucrânia.",
+    ),
+    Actor(
+        "oreshnik", "Oreshnik", listOf("oreshnik"),
+        "Míssil balístico russo de alcance intermediário, com várias ogivas. Usado uma vez contra Dnipro, na Ucrânia, em novembro de " +
+            "2024; o alcance estimado passa de 3.000 km.",
+    ),
+    Actor(
+        "lancet", "Drone Lancet", listOf("lancet drone", "lancet drones", "drone lancet", "drones lancet", "zala lancet"),
+        "Drone russo de ataque (munição vagante) de alcance curto, usado para caçar tanques, artilharia e defesas antiaéreas perto " +
+            "da linha de frente na Ucrânia.",
+    ),
+    Actor(
+        "bayraktar", "Bayraktar TB2", listOf("bayraktar", "tb2"),
+        "Drone armado turco de média altitude e longa autonomia. Ficou famoso na guerra de Nagorno-Karabakh (2020) e no início da " +
+            "invasão russa da Ucrânia (2022); também usado na Líbia e na Síria.",
+    ),
+    Actor(
+        "kornet", "Kornet", listOf("kornet"),
+        "Míssil antitanque guiado russo, com alcance de 5 a 10 km. Muito usado pelo Hezbollah e pelo Hamas contra blindados e " +
+            "posições israelenses.",
+    ),
 )
 
 /** Pessoas-chave. Texto fixo até 2025: cargos podem ter mudado depois. */

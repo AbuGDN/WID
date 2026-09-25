@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from .fetch import iso, parse_iso
-from .text import strip_accents, tokens
+from .text import normalize_rtl, strip_accents, tokens
 
 # ---------------------------------------------------------------------------
 # Números de mortos e feridos
@@ -160,6 +160,32 @@ def cluster_sides(cluster: dict) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Violação de trégua
+# ---------------------------------------------------------------------------
+
+_TRUCE_RX = [
+    re.compile(p) for p in (
+        r"violat\w*\W+(?:\w+\W+){0,3}?(?:ceasefire|truce)",
+        r"(?:ceasefire|truce)\W+(?:\w+\W+){0,2}?(?:violation|breach)",
+        r"breach\w*\W+(?:\w+\W+){0,3}?(?:ceasefire|truce)",
+        r"viol\w*\W+(?:\w+\W+){0,3}?(?:cessar-fogo|tregua)",
+        r"(?:cessar-fogo|tregua)\W+(?:\w+\W+){0,2}?violad",
+        r"הפר\w*\W+(?:\w+\W+){0,2}?הפסקת\W+(?:ה)?אש",
+        r"(?:خرق|انتهاك|انتهاكات|خروقات)\W+(?:\w+\W+){0,2}?(?:[لبو]?وقف\W+اطلاق\W+النار|\w{0,3}هدنة)",
+    )
+]
+
+
+def truce_violation(cluster: dict) -> bool:
+    """Algum veículo do grupo relata violação de cessar-fogo/trégua."""
+    for a in cluster["articles"]:
+        text = normalize_rtl(strip_accents(f"{a['title']} {a.get('summary', '')}".lower()))
+        if any(rx.search(text) for rx in _TRUCE_RX):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Tensão por região e anomalias
 # ---------------------------------------------------------------------------
 
@@ -173,7 +199,7 @@ _HEAVY_RX = [re.compile(r"(?<!\w)" + re.escape(t)) for t in HEAVY_TERMS]
 BASELINE_DAYS = 14
 
 
-def _level(score: int) -> str:
+def level_for(score: int) -> str:
     if score >= 75:
         return "crítica"
     if score >= 50:
@@ -215,7 +241,7 @@ def region_tension(items: list[dict], stats_days: list[dict], today: str, now: d
         spike_ratio = (len(last6) * 4) / max(normal, 1.0) if history else 0.0
         result[tag] = {
             "tension": score,
-            "level": _level(score),
+            "level": level_for(score),
             "last24": len(last24),
             "baseline": round(baseline, 1),
             "spike": bool(history) and len(last6) >= 3 and spike_ratio >= 3,

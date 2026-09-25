@@ -12,6 +12,7 @@ data class Feed(
     @SerialName("top_of_day") val topOfDay: Cluster? = null,
     /** Índice de tensão e alerta de anomalia por região (tag). */
     val regions: Map<String, RegionStat> = emptyMap(),
+    val global: GlobalClock? = null,
     val clusters: List<Cluster> = emptyList(),
 )
 
@@ -98,6 +99,8 @@ data class Cluster(
     val saga: SagaRef? = null,
     /** "opostos" (imprensa árabe e israelense/americana contam a mesma coisa) ou "um_lado". */
     val sides: String? = null,
+    /** Algum veículo relata violação de cessar-fogo/trégua. */
+    @SerialName("truce_violation") val truceViolation: Boolean = false,
 )
 
 @Serializable
@@ -111,7 +114,16 @@ data class ArticleRef(
     val published: String,
     val image: String? = null,
     val origin: String = "internacional",
+    /** Manchetes anteriores do mesmo link (o veículo trocou o título depois de publicar). */
+    val edits: List<TitleEdit> = emptyList(),
 )
+
+@Serializable
+data class TitleEdit(val title: String, val at: String = "")
+
+/** Relógio do Argos: tensão global 0–100. */
+@Serializable
+data class GlobalClock(val index: Int = 0, val level: String = "baixa", val leader: String = "")
 
 /** Uma leitura: dia (epochDay), história e regiões dela. */
 @Serializable
@@ -126,7 +138,14 @@ data class SavedMeta(val folder: String? = null, val note: String? = null)
 data class DailyStats(val days: List<StatsDay> = emptyList())
 
 @Serializable
-data class StatsDay(val date: String, val total: Int = 0, val counts: Map<String, Int> = emptyMap())
+data class StatsDay(
+    val date: String,
+    val total: Int = 0,
+    val counts: Map<String, Int> = emptyMap(),
+    /** Maior índice de tensão do dia por região, e o maior do relógio global. */
+    val tension: Map<String, Int> = emptyMap(),
+    val global: Int = 0,
+)
 
 val ORIGIN_LABELS = linkedMapOf(
     "israel" to "Imprensa israelense",

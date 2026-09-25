@@ -70,6 +70,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilterChip
 import com.abugdn.wid.data.RANGES
 import com.abugdn.wid.data.RangeArc
+import com.abugdn.wid.data.cities
+
+/** Abre a aba Mapa com o círculo de alcance [String] em destaque (fornecido pelo MainActivity). */
+val LocalOpenMap = androidx.compose.runtime.staticCompositionLocalOf<(String) -> Unit> { {} }
 
 /**
  * Posição aproximada de cada região. Israel, Gaza, Cisjordânia e Líbano ficam afastados
@@ -136,6 +140,27 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var showRanges by rememberSaveable { mutableStateOf(false) }
+    var byCity by rememberSaveable { mutableStateOf(false) }
+    var highlight by rememberSaveable { mutableStateOf<String?>(null) }
+    val repo = context.repository
+    // Cidade -> histórias que a citam (mais recentes primeiro).
+    val cityStories = remember(feed) {
+        val out = linkedMapOf<com.abugdn.wid.data.City, MutableList<com.abugdn.wid.data.Cluster>>()
+        feed?.clusters.orEmpty().sortedByDescending { it.updated }.forEach { c ->
+            c.cities(repo.translator::cached).forEach { city -> out.getOrPut(city) { mutableListOf() }.add(c) }
+        }
+        out
+    }
+    // Vindo da ficha de uma arma: liga os alcances e vai até o círculo pedido.
+    val focus by repo.mapFocus.collectAsStateWithLifecycle()
+    LaunchedEffect(focus) {
+        val id = focus ?: return@LaunchedEffect
+        tab = 0
+        showRanges = true
+        highlight = id
+        RANGES.firstOrNull { it.id == id }?.let { mapView.controller.animateTo(GeoPoint(it.lat, it.lon), rangeZoom(it.km), 600L) }
+        repo.mapFocus.value = null
+    }
     var contextTag by remember { mutableStateOf<String?>(null) }
     contextTag?.let { RegionContextDialog(it, onOpen) { contextTag = null } }
     Scaffold(
@@ -150,14 +175,20 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
             if (tab == 1) {
                 TrendBody(onRegion)
             } else {
-            Row(Modifier.padding(horizontal = 16.dp)) {
+            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = byCity,
+                    onClick = { byCity = !byCity },
+                    label = { Text("📍 Por cidade") },
+                )
                 FilterChip(
                     selected = showRanges,
                     onClick = {
                         showRanges = !showRanges
+                        highlight = null
                         if (showRanges) mapView.controller.animateTo(GeoPoint(30.0, 42.0), 3.6, 600L)
                     },
-                    label = { Text("🎯 Alcance de mísseis e defesas") },
+                    label = { Text("🎯 Alcances") },
                 )
             }
             // O MapView desenha fora dos próprios limites ao arrastar/dar zoom; a moldura com
@@ -176,8 +207,20 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
                     val map = mapView
                     map.overlays.removeAll { it is Marker || it is Polygon }
                     // Círculos antes dos marcadores, para os marcadores ficarem por cima e receberem o toque.
-                    if (showRanges) RANGES.forEach { map.overlays.add(rangePolygon(map, it)) }
-                    counts.forEach { (tag, n) ->
+                    if (showRanges) RANGES.forEach { map.overlays.add(rangePolygon(map, it, it.id == highlight)) }
+                    if (byCity) cityStories.forEach { (city, stories) ->
+                        map.overlays.add(Marker(map).apply {
+                            position = GeoPoint(city.lat, city.lon)
+                            title = "${city.name} · ${stories.size}"
+                            icon = countIcon(context, stories.size, small = true)
+                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                            setOnMarkerClickListener { m, _ ->
+                                if (m.isInfoWindowShown) onOpen(stories.first().id) else m.showInfoWindow()
+                                true
+                            }
+                        })
+                    }
+                    if (!byCity) counts.forEach { (tag, n) ->
                         val point = REGION_POINTS[tag] ?: return@forEach
                         map.overlays.add(Marker(map).apply {
                             position = point
@@ -200,6 +243,33 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
                 modifier = Modifier.padding(16.dp, 8.dp),
             )
             LazyColumn(Modifier.weight(0.4f)) {
+                if (byCity) {
+                    if (cityStories.isEmpty()) {
+                        item { Text("Nenhuma cidade conhecida citada no feed agora.", modifier = Modifier.padding(16.dp)) }
+                    }
+                    items(cityStories.entries.sortedByDescending { it.value.size }.toList(), key = { "city-" + it.key.name }) { (city, stories) ->
+                        Column(
+                            Modifier.fillMaxWidth()
+                                .clickable { mapView.controller.animateTo(GeoPoint(city.lat, city.lon), 7.0, 600L) }
+                                .padding(16.dp, 10.dp),
+                        ) {
+                            Text(
+                                "📍 ${city.name} · ${if (stories.size == 1) "1 história" else "${stories.size} histórias"}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            stories.take(2).forEach { c ->
+                                Text(
+                                    "• " + repo.translator.display(c.title, c.lang),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 2,
+                                    modifier = Modifier.clickable { onOpen(c.id) }.padding(vertical = 2.dp),
+                                )
+                            }
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    }
+                }
                 if (showRanges) {
                     items(RANGES, key = { it.label }) { arc ->
                         RangeLegendRow(arc) { mapView.controller.animateTo(GeoPoint(arc.lat, arc.lon), rangeZoom(arc.km), 600L) }
@@ -216,7 +286,7 @@ fun MapScreen(onRegion: (String) -> Unit, onOpen: (String) -> Unit) {
                         HorizontalDivider()
                     }
                 }
-                items(counts.entries.sortedByDescending { it.value }.toList(), key = { it.key }) { (tag, n) ->
+                if (!byCity) items(counts.entries.sortedByDescending { it.value }.toList(), key = { it.key }) { (tag, n) ->
                     Row(
                         Modifier.fillMaxWidth().clickable { onRegion(tag) }.padding(start = 16.dp, end = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -253,11 +323,11 @@ private val RANGE_RED = 0xFFB3122E.toInt()
 private val RANGE_GOLD = 0xFFC9A227.toInt()
 
 /** Círculo geodésico de alcance: vermelho para ataque, ouro para defesa. */
-private fun rangePolygon(map: MapView, arc: RangeArc): Polygon = Polygon(map).apply {
+private fun rangePolygon(map: MapView, arc: RangeArc, highlighted: Boolean = false): Polygon = Polygon(map).apply {
     setPoints(Polygon.pointsAsCircle(GeoPoint(arc.lat, arc.lon), arc.km * 1000.0))
     val color = if (arc.defense) RANGE_GOLD else RANGE_RED
     outlinePaint.color = color
-    outlinePaint.strokeWidth = 2.5f * map.context.resources.displayMetrics.density
+    outlinePaint.strokeWidth = (if (highlighted) 5f else 2.5f) * map.context.resources.displayMetrics.density
     fillPaint.color = (color and 0x00FFFFFF) or (if (arc.defense) 0x40000000 else 0x18000000)
     title = arc.label
     // Não "engole" o toque: o mapa continua arrastável e os marcadores clicáveis.
@@ -384,9 +454,9 @@ fun TrendRow(label: String, values: List<Int>, highlight: Boolean, onClick: (() 
 }
 
 /** Marcador: círculo vermelho com o número de histórias da região. */
-private fun countIcon(context: Context, count: Int): Drawable {
+private fun countIcon(context: Context, count: Int, small: Boolean = false): Drawable {
     val density = context.resources.displayMetrics.density
-    val size = ((if (count >= 100) 40 else 34) * density).toInt()
+    val size = ((if (small) 26 else if (count >= 100) 40 else 34) * density).toInt()
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = AndroidCanvas(bitmap)
     val r = size / 2f
@@ -402,7 +472,7 @@ private fun countIcon(context: Context, count: Int): Drawable {
     val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xFF050505.toInt()
         textAlign = Paint.Align.CENTER
-        textSize = 13 * density
+        textSize = (if (small) 11 else 13) * density
         typeface = Typeface.DEFAULT_BOLD
     }
     canvas.drawText(count.toString(), r, r - (text.descent() + text.ascent()) / 2, text)

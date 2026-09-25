@@ -94,6 +94,32 @@ class Repository(context: Context) {
         }
     }
 
+    private val _quotes = MutableStateFlow(storage.loadQuotes())
+    /** "Quem disse o quê": frases entre aspas de pessoas-chave, acumuladas com o tempo. */
+    val quotes: StateFlow<List<QuoteEntry>> = _quotes.asStateFlow()
+
+    @Synchronized
+    private fun recordQuotes(feed: Feed) {
+        val found = Quotes.fromFeed(feed.clusters) { text, lang -> if (lang == "pt") text else storage.translations[text] ?: "" }
+        val next = Quotes.merge(_quotes.value, found)
+        if (next !== _quotes.value) {
+            storage.saveQuotes(next)
+            _quotes.value = next
+        }
+    }
+
+    /** Círculo de alcance que o Mapa deve mostrar ao abrir (ficha de armamento → "ver no mapa"). */
+    val mapFocus = MutableStateFlow<String?>(null)
+
+    private val _endedTruces = MutableStateFlow(storage.prefs.getStringSet("ended_truces", emptySet())!!.toSet())
+    val endedTruces: StateFlow<Set<String>> = _endedTruces.asStateFlow()
+
+    fun setTruceEnded(key: String, ended: Boolean) {
+        val next = if (ended) _endedTruces.value + key else _endedTruces.value - key
+        storage.prefs.edit().putStringSet("ended_truces", next).apply()
+        _endedTruces.value = next
+    }
+
     private val _stats = MutableStateFlow<DailyStats?>(null)
     val stats: StateFlow<DailyStats?> = _stats.asStateFlow()
 
@@ -147,6 +173,7 @@ class Repository(context: Context) {
                 _vigil.value.filter { it.lang != "pt" }.map { it.title }
             translator.translateAll(texts)
             storage.saveTranslations(keep = texts)
+            recordQuotes(feed)
             storage.saveFeed(raw)
             this@Repository.raw = feed
             applySourcePrefs(feed, settings.value).also { _feed.value = it }!!
@@ -161,7 +188,10 @@ class Repository(context: Context) {
                 add(c.title)
                 if (c.summary.isNotBlank()) add(c.summary)
             }
-            c.articles.filter { it.lang != "pt" }.forEach { add(it.title) }
+            c.articles.filter { it.lang != "pt" }.forEach { a ->
+                add(a.title)
+                a.edits.forEach { add(it.title) }
+            }
             c.saga?.chapters?.filter { it.lang != "pt" }?.forEach { add(it.title) }
         }
     }

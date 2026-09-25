@@ -128,3 +128,17 @@ def test_sides_opposed_and_one_side():
     assert cluster_sides(small) is None
     neutral = {"articles": [art(s, "t", origin="brasil") for s in ("G1", "Folha", "Estadão")]}
     assert cluster_sides(neutral) is None
+
+
+def test_truce_violation_in_several_languages():
+    from wid.analysis import truce_violation
+
+    def one(title):
+        return {"articles": [art("X", title)]}
+
+    assert truce_violation(one("Israel accuses Hamas of violating the Gaza ceasefire"))
+    assert truce_violation(one("Hezbollah says ceasefire breach by Israel"))
+    assert truce_violation(one("Exército acusa Hezbollah de violar o cessar-fogo"))
+    assert truce_violation(one("خرق جديد لوقف إطلاق النار في غزة"))
+    assert truce_violation(one("צה\"ל: חמאס הפר את הפסקת האש"))
+    assert not truce_violation(one("Ceasefire talks resume in Cairo"))

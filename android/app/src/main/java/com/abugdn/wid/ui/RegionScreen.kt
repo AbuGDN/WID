@@ -50,6 +50,9 @@ fun RegionScreen(tag: String, onBack: () -> Unit, onOpen: (String) -> Unit) {
     val cutoff = LocalDate.now().minusDays(30).toString()
     val pastTops = archive.orEmpty().filter { tag in it.top.tags && it.date >= cutoff && current.none { c -> c.id == it.top.id } }
     val trend = stats?.days.orEmpty().takeLast(14).map { it.counts[tag] ?: 0 }
+    val tensionDays = stats?.days.orEmpty().takeLast(30).mapNotNull { d -> d.tension[tag]?.let { d.date to it } }
+    val vigil by repo.vigil.collectAsStateWithLifecycle()
+    val peaks = vigil.filter { it.region == tag && (it.kind == "tension" || it.kind == "spike") }.take(5)
 
     val stat = feed?.regions?.get(tag)
     Scaffold(
@@ -68,6 +71,23 @@ fun RegionScreen(tag: String, onBack: () -> Unit, onOpen: (String) -> Unit) {
                 Column(Modifier.padding(16.dp, 12.dp, 16.dp, 0.dp)) {
                     ConflictCounter(tag, Modifier.padding(bottom = 12.dp))
                     stat?.let { TensionGauge(it) }
+                    Text(
+                        "TENSÃO · 30 DIAS",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Accent,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 6.dp),
+                    )
+                    TensionHistoryChart(tensionDays)
+                    peaks.forEach { e ->
+                        Text(
+                            "⚑ ${dayClock(java.time.Instant.ofEpochMilli(e.time).toString())} · ${e.title} · ${e.detail}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Alert,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    TruceCards(tag)
                 }
             }
             REGION_CONTEXT[tag]?.let { text ->

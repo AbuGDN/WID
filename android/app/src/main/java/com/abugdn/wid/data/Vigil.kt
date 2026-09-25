@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 data class VigilEvent(
     val key: String,
     val time: Long,
-    /** "urgent", "spike", "figures" ou "tension". */
+    /** "urgent", "spike", "figures", "tension", "truce" ou "clock". */
     val kind: String,
     val title: String,
     val lang: String = "pt",
@@ -24,6 +24,8 @@ val VIGIL_KINDS = linkedMapOf(
     "spike" to "📈 Alta incomum",
     "figures" to "⚠ Números divergentes",
     "tension" to "🔥 Tensão crítica",
+    "truce" to "🕊 Violação de trégua",
+    "clock" to "👁 Relógio do Argos",
 )
 
 const val VIGIL_MAX = 500
@@ -36,6 +38,10 @@ object Vigil {
             if (c.urgent) {
                 add(VigilEvent("urgent:${c.id}", start, "urgent", c.title, c.lang, "${c.sourcesCount} veículos", clusterId = c.id))
             }
+            if (c.truceViolation) {
+                val region = c.tags.firstOrNull { tag -> TRUCES.any { tag in it.tags } } ?: c.tags.firstOrNull()
+                add(VigilEvent("truce:${c.id}", start, "truce", c.title, c.lang, "violação de cessar-fogo relatada", clusterId = c.id, region = region))
+            }
             val divergent = c.figures.filterValues { it.divergent }
             if (divergent.isNotEmpty()) {
                 val detail = divergent.entries.joinToString(" · ") { (kind, info) ->
@@ -44,6 +50,15 @@ object Vigil {
                 }
                 add(VigilEvent("figures:${c.id}", now, "figures", c.title, c.lang, detail, clusterId = c.id))
             }
+        }
+        feed.global?.takeIf { it.level == "alta" || it.level == "crítica" }?.let { g ->
+            add(
+                VigilEvent(
+                    "clock:${g.level}:$day", now, "clock", "Relógio do Argos em ${g.level}",
+                    detail = "índice ${g.index} de 100 · puxado por ${TAG_LABELS[g.leader] ?: g.leader}",
+                    region = g.leader.ifBlank { null }, value = g.index.toDouble(),
+                )
+            )
         }
         for ((tag, r) in feed.regions) {
             val name = TAG_LABELS[tag] ?: tag
