@@ -30,6 +30,8 @@ from .keywords import Keywords
 log = logging.getLogger("wid")
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+# Página de download (web/ na raiz do repositório), publicada junto do feed no GitHub Pages.
+WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
 LOCAL_TZ = ZoneInfo("America/Sao_Paulo")
 KEEP_WINDOW = timedelta(hours=48)
 TOP_WINDOW = timedelta(hours=24)
@@ -142,6 +144,15 @@ def record_tension(out: Path, stats_days: list[dict], regions: dict, clock: dict
     write_json(out / "stats" / "daily.json", {"days": stats_days})
 
 
+def copy_web(out: Path, web: Path = WEB_DIR) -> None:
+    """Copia a página de download para a raiz do site (sem subpastas)."""
+    if not web.is_dir():
+        return
+    for f in web.iterdir():
+        if f.is_file():
+            (out / f.name).write_bytes(f.read_bytes())
+
+
 def build(out: Path, now: datetime, sources: list[dict], kw: Keywords, fetched: list[Article], status: dict) -> dict:
     weights = {s["name"]: float(s.get("weight", 1.0)) for s in sources}
     origins = {s["name"]: s["origin"] for s in sources if "origin" in s}
@@ -204,6 +215,7 @@ def build(out: Path, now: datetime, sources: list[dict], kw: Keywords, fetched: 
 
     write_json(out / "sources_status.json", {"generated_at": iso(now), "sources": status})
     (out / ".nojekyll").touch()
+    copy_web(out)
     return feed
 
 

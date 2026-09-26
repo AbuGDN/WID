@@ -227,3 +227,11 @@ def test_global_clock_and_daily_tension_peaks(tmp_path):
     record_tension(tmp_path, days, {"gaza": {"tension": 30}}, {"index": 30})
     saved = json.loads((tmp_path / "stats" / "daily.json").read_text())["days"][-1]
     assert saved["tension"]["gaza"] == 80 and saved["global"] == 72
+
+
+def test_download_page_is_copied_to_site(tmp_path):
+    from wid.build import WEB_DIR, copy_web
+
+    copy_web(tmp_path)
+    assert (tmp_path / "index.html").read_text(encoding="utf-8") == (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    assert (tmp_path / "icon.svg").exists()

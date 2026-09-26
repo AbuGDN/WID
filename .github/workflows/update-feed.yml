@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
   push:
     branches-ignore: [gh-pages]
-    paths: ["backend/**", ".github/workflows/update-feed.yml"]
+    paths: ["backend/**", "web/**", ".github/workflows/update-feed.yml"]
 
 permissions:
   contents: write
@@ -62,7 +62,7 @@ jobs:
             # O ciclo dura horas: a cada rodada pega a versão mais nova do backend,
             # para uma mudança publicada no meio do ciclo não ser desfeita por código antigo.
             if [ "$round" -gt 1 ] && git fetch -q --depth=1 origin "$GITHUB_REF_NAME"; then
-              git checkout -q FETCH_HEAD -- backend
+              git checkout -q FETCH_HEAD -- backend web
               pip install -q -r backend/requirements.txt
             fi
             if (cd backend && python -m wid.build --out ../site); then

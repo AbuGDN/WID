@@ -65,6 +65,8 @@ android/app/src/main/java/com/abugdn/wid/
   sync/                  SyncWorker (30 min), DigestWorker, Notifier, NotificationActionReceiver
   ui/                    Compose; MainActivity faz a navegação por estado (sem navigation-compose)
   widget/                Glance: TopWidget, CompactWidget, RegionWidget (+ configuração), ClockWidget
+web/                     página de download (index.html, icon.svg); build.py copia para a gh-pages →
+                         GitHub Pages em abugdn.github.io/<repo>/. Busca o APK mais novo pela API
 .github/workflows/
   update-feed.yml        coleta; ciclos de ~5 h (11 rodadas × 30 min); cada rodada pega o backend novo
   build-android.yml      compila e publica release v1.0.<run_number> a cada push em android/
