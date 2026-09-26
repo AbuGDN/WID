@@ -11,8 +11,9 @@ para continuar o trabalho sem redescobrir tudo.
   **só** para alertas. Títulos em serifa. Tema escuro é o padrão.
 - O pacote `com.abugdn.wid`, a pasta `backend/wid` e `WID_VERSION_CODE` ficam com o nome antigo de
   propósito (mudar o applicationId quebraria as atualizações).
-- O app tenta `AbuGDN/Argos` e cai para `AbuGDN/WID` (dados e Releases), então funciona antes e depois
-  da troca de nome do repositório.
+- O repositório foi renomeado para **`AbuGDN/Argos`** (26/09/2026). App e página ainda têm `AbuGDN/WID`
+  como segunda opção (o GitHub redireciona o nome antigo); pode ficar.
+- Página de download: **https://abugdn.github.io/Argos/** (GitHub Pages da branch `gh-pages`).
 
 ## O projeto em uma frase
 
@@ -66,7 +67,7 @@ android/app/src/main/java/com/abugdn/wid/
   ui/                    Compose; MainActivity faz a navegação por estado (sem navigation-compose)
   widget/                Glance: TopWidget, CompactWidget, RegionWidget (+ configuração), ClockWidget
 web/                     página de download (index.html, icon.svg); build.py copia para a gh-pages →
-                         GitHub Pages em abugdn.github.io/<repo>/. Busca o APK mais novo pela API
+                         GitHub Pages em abugdn.github.io/Argos/. Busca o APK mais novo pela API
 .github/workflows/
   update-feed.yml        coleta; ciclos de ~5 h (11 rodadas × 30 min); cada rodada pega o backend novo
   build-android.yml      compila e publica release v1.0.<run_number> a cada push em android/

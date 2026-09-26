@@ -10,6 +10,7 @@ esses JSONs, traduz no próprio celular e guarda tudo offline.
 
 - Repositório: https://github.com/AbuGDN/Argos (público)
 - Releases (APK): https://github.com/AbuGDN/Argos/releases
+- Página de download: https://abugdn.github.io/Argos/
 - Dados publicados: `https://raw.githubusercontent.com/AbuGDN/Argos/gh-pages/feed.json` (e `top.json`, `history/`, `stats/`, `sagas.json`, `sources_status.json`)
 - Histórico de decisões e fases: [`PLANO.md`](PLANO.md)
 - Contexto para o Claude Code: [`CLAUDE.md`](CLAUDE.md)

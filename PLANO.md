@@ -8,7 +8,7 @@ Público: 1 dono + até 4 amigos. Requisitos: **custo zero**, **mobile**, **widg
 | Pergunta | Decisão |
 |---|---|
 | Plataforma | **Android** (todos) |
-| Repo público | **Sim** — `AbuGDN/WID` já é público |
+| Repo público | **Sim** — `AbuGDN/Argos` (antigo WID) já é público |
 | Guardar notícias | **Sim, texto completo** — guardado **no celular** (ver §5) |
 | Notificações | **Sim** — geradas pelo próprio app (sem serviço externo) |
 | Idioma | **Português**; notícias estrangeiras traduzidas no celular |
@@ -41,7 +41,7 @@ Público: 1 dono + até 4 amigos. Requisitos: **custo zero**, **mobile**, **widg
  │          4. calcula "notícia principal do dia"                         │
  │          5. grava feed.json + top.json                                 │
  │                                                                        │
- │  branch gh-pages → raw.githubusercontent.com/AbuGDN/WID/gh-pages/…     │
+ │  branch gh-pages → raw.githubusercontent.com/AbuGDN/Argos/gh-pages/…     │
  │  GitHub Releases → APK do app (build automático)                       │
  └────────────────────────────────────────────────────────────────────────┘
                  │ HTTPS (JSON estático)
@@ -157,7 +157,7 @@ Misturar perspectivas para não ficar enviesado. Lista real em `backend/config/s
 
 ## 9. Como instalar o app (você e os amigos)
 
-1. Baixe o `.apk` mais recente em https://github.com/AbuGDN/WID/releases e abra (o app não está na Play Store).
+1. Baixe o `.apk` mais recente em https://github.com/AbuGDN/Argos/releases e abra (o app não está na Play Store).
    O Android vai pedir para permitir "instalar apps desconhecidos" pelo navegador — permita.
 2. Para atualizar, basta baixar e abrir o APK novo por cima (os dados ficam).
    Opcional: o **Obtainium** (também fora da Play Store: https://github.com/ImranR98/Obtainium/releases)
